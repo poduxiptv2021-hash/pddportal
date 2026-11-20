@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDD Portal</title>
+<style>
+  :root{
+    --bg:#0a1a12;
+    --bg-light:#0f2318;
+    --card:rgba(255,255,255,0.05);
+    --card-border:rgba(255,255,255,0.1);
+    --green:#10b981;
+    --green-dark:#0d9668;
+    --amber:#d99a1b;
+    --blue:#3b82f6;
+    --text:#f5f5f4;
+    --text-dim:#9ca3a1;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  /* ---------- LOGIN ---------- */
+  #login-screen{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    background:radial-gradient(circle at top, #163d29, #0a1a12 70%);
+    padding:20px;
+  }
+  .logo-box{
+    width:64px;height:64px;border-radius:14px;
+    background:var(--green);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:20px;color:#06281c;
+    margin-bottom:16px;
+  }
+  #login-screen h1{margin:0;font-size:28px;font-weight:800;}
+  .subtitle{color:var(--text-dim);margin-top:6px;text-align:center;}
+  .subtitle.small{font-size:13px;margin-top:2px;}
+  .login-card{
+    background:var(--bg-light);
+    border:1px solid var(--card-border);
+    border-radius:16px;
+    padding:32px;
+    width:100%;
+    max-width:380px;
+    margin-top:28px;
+  }
+  .login-card h2{margin:0 0 20px;font-size:20px;font-weight:700;}
+  .field label{font-size:13px;color:var(--text-dim);display:block;margin-bottom:6px;}
+  .field input{
+    width:100%;
+    padding:12px 14px;
+    border-radius:8px;
+    border:none;
+    background:#eef2f6;
+    color:#111;
+    font-size:14px;
+    margin-bottom:18px;
+  }
+  .btn-primary{
+    width:100%;
+    padding:13px;
+    border-radius:8px;
+    border:none;
+    background:var(--green);
+    color:#06281c;
+    font-weight:700;
+    font-size:15px;
+    cursor:pointer;
+  }
+  .btn-primary:hover{background:var(--green-dark);}
+  .access-note{
+    text-align:center;
+    color:var(--text-dim);
+    font-size:12px;
+    margin-top:16px;
+  }
+  .demo-box{
+    width:100%;
+    max-width:380px;
+    margin-top:20px;
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:12px;
+    padding:16px 20px;
+    font-size:13px;
+    color:var(--text-dim);
+  }
+  .demo-box div{margin-top:4px;}
+  .demo-box strong{color:#d8dcd8;}
+  .demo-box span{color:var(--green);}
+
+  /* ---------- APP LAYOUT ---------- */
+  #app{display:none;min-height:100vh;}
+  .sidebar{
+    width:250px;
+    background:var(--bg-light);
+    border-right:1px solid var(--card-border);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    position:fixed;
+    top:0;left:0;bottom:0;
+  }
+  .sidebar-top{padding:20px;}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:28px;}
+  .brand .logo-box{width:36px;height:36px;font-size:13px;margin:0;border-radius:8px;}
+  .brand-text b{display:block;font-size:15px;}
+  .brand-text span{font-size:11px;color:var(--text-dim);}
+  nav a{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:11px 14px;
+    border-radius:8px;
+    color:#cfd6d2;
+    text-decoration:none;
+    font-size:14px;
+    margin-bottom:4px;
+    cursor:pointer;
+  }
+  nav a .left{display:flex;align-items:center;gap:10px;}
+  nav a:hover{background:rgba(255,255,255,0.06);}
+  nav a.active{background:var(--green);color:#06281c;font-weight:600;}
+  .sidebar-bottom{padding:20px;border-top:1px solid var(--card-border);}
+  .user-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .avatar{
+    width:32px;height:32px;border-radius:50%;
+    background:var(--green);color:#06281c;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:13px;
+  }
+  .user-row b{display:block;font-size:13px;}
+  .user-row span{font-size:11px;color:var(--text-dim);}
+  .signout{color:#f87171;font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px;cursor:pointer;}
+
+  .main{margin-left:250px;padding:32px 40px;flex:1;}
+  .page{display:none;}
+  .page.active{display:block;}
+  .page h1{font-size:26px;margin:0 0 6px;font-weight:800;}
+  .page-desc{color:var(--text-dim);font-size:14px;margin-bottom:26px;}
+
+  /* Dashboard stat cards */
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;}
+  .stat-card{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:12px;
+    padding:18px 20px;
+  }
+  .stat-card .label{font-size:11px;letter-spacing:0.06em;color:var(--text-dim);text-transform:uppercase;}
+  .stat-card .value{font-size:28px;font-weight:800;margin-top:6px;}
+  .value.blue{color:var(--blue);}
+  .value.amber{color:var(--amber);}
+  .value.green{color:var(--green);}
+
+  .section-label{font-size:12px;letter-spacing:0.08em;color:var(--text-dim);text-transform:uppercase;margin-bottom:14px;}
+
+  .progress-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:10px;}
+  .progress-card{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:12px;
+    padding:24px;
+    text-align:center;
+  }
+  .progress-card h3{margin:0 0 16px;font-size:15px;font-weight:700;}
+  .donut{
+    width:90px;height:90px;border-radius:50%;
+    border:6px solid rgba(255,255,255,0.12);
+    margin:0 auto 14px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .pct{font-weight:700;font-size:18px;margin-bottom:14px;}
+  .pct.blue{color:var(--blue);}
+  .pct.amber{color:var(--amber);}
+  .badge{
+    display:inline-block;
+    padding:5px 14px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:600;
+  }
+  .badge.blue{background:rgba(59,130,246,0.15);color:#60a5fa;}
+  .badge.amber{background:rgba(217,154,27,0.15);color:#e0ac3c;}
+  .badge.green{background:rgba(16,185,129,0.15);color:var(--green);}
+
+  /* Project cards (Dashboard scroll list) */
+  .proj-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:24px;}
+  .proj-card{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:12px;
+    padding:20px;
+  }
+  .proj-head{display:flex;justify-content:space-between;align-items:flex-start;}
+  .proj-head h4{margin:0;font-size:16px;}
+  .proj-head .type{font-size:12px;color:var(--text-dim);margin-top:2px;}
+  .proj-gdv{margin:10px 0;font-size:13px;color:var(--text-dim);}
+  .proj-gdv b{color:var(--green);}
+  .proj-note{font-size:13px;color:#d5d9d6;margin-bottom:14px;line-height:1.5;}
+  .target-box{
+    background:rgba(255,255,255,0.05);
+    border-radius:8px;
+    padding:10px 14px;
+    font-size:12px;
+    color:var(--text-dim);
+    margin-bottom:12px;
+  }
+  .target-box b{display:block;color:#e5e7e5;font-size:13px;margin-top:2px;}
+  .link-btn{
+    display:block;
+    text-align:center;
+    border:1px solid var(--card-border);
+    border-radius:8px;
+    padding:9px;
+    color:var(--green);
+    font-size:13px;
+    text-decoration:none;
+    cursor:pointer;
+  }
+  .link-btn:hover{background:rgba(16,185,129,0.08);}
+
+  /* Documents */
+  .tab-row{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;}
+  .tab-pill{
+    padding:9px 18px;
+    border-radius:8px;
+    background:rgba(255,255,255,0.06);
+    color:#cfd6d2;
+    font-size:13px;
+    cursor:pointer;
+    border:1px solid transparent;
+  }
+  .tab-pill.active{background:var(--green);color:#06281c;font-weight:600;}
+  .empty-state{
+    text-align:center;
+    padding:80px 20px;
+    color:var(--text-dim);
+  }
+  .empty-state svg{margin-bottom:14px;opacity:0.4;}
+  .page-header-row{display:flex;justify-content:space-between;align-items:flex-start;}
+  .btn-green{
+    background:var(--green);
+    color:#06281c;
+    border:none;
+    padding:11px 18px;
+    border-radius:8px;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+
+  /* KPI Tracker */
+  .kpi-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;}
+  .kpi-stats{display:flex;gap:24px;align-items:center;}
+  .kpi-stats div{text-align:center;font-size:13px;color:var(--text-dim);}
+  .kpi-stats b{display:block;font-size:18px;}
+  .kpi-stats b.green{color:var(--green);}
+  .kpi-stats b.amber{color:var(--amber);}
+  .btn-amber{
+    background:#3a2c0f;
+    border:1px solid #6b5219;
+    color:#e0ac3c;
+    padding:10px 16px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .kpi-section{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:12px;
+    margin-bottom:20px;
+    overflow:hidden;
+  }
+  .kpi-section-head{
+    background:rgba(16,185,129,0.08);
+    color:var(--green);
+    font-weight:700;
+    font-size:14px;
+    padding:14px 20px;
+  }
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{
+    text-align:left;
+    color:var(--text-dim);
+    font-weight:600;
+    padding:10px 20px;
+    border-bottom:1px solid var(--card-border);
+    font-size:12px;
+  }
+  td{padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  .status-pill{
+    padding:4px 12px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:600;
+    display:inline-block;
+  }
+  .status-pill.completed{background:rgba(16,185,129,0.15);color:var(--green);}
+  .status-pill.inprogress{background:rgba(59,130,246,0.15);color:#60a5fa;}
+
+  /* Reports */
+  .report-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:12px;
+    padding:16px 20px;
+    margin-bottom:12px;
+  }
+  .report-row .left{display:flex;align-items:center;gap:10px;font-weight:600;}
+  .report-row .actions{display:flex;gap:10px;align-items:center;}
+  .btn-outline{
+    background:rgba(255,255,255,0.06);
+    border:none;
+    color:#e5e7e5;
+    padding:8px 14px;
+    border-radius:8px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .btn-download{
+    background:rgba(16,185,129,0.15);
+    color:var(--green);
+    border:none;
+    padding:8px 14px;
+    border-radius:8px;
+    font-size:13px;
+    cursor:pointer;
+    font-weight:600;
+  }
+
+  /* Project Folders */
+  .folder-card{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:12px;
+    margin-bottom:20px;
+    overflow:hidden;
+  }
+  .folder-head{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:18px 22px;cursor:pointer;
+  }
+  .folder-head .left{display:flex;align-items:center;gap:10px;}
+  .folder-head h4{margin:0;font-size:16px;}
+  .folder-head .sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
+  .folder-body{padding:0 22px 20px;}
+  .folder-tabs{display:flex;gap:20px;border-bottom:1px solid var(--card-border);margin-bottom:14px;}
+  .folder-tab{padding:8px 2px 12px;font-size:13px;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;}
+  .folder-tab.active{color:var(--green);border-bottom-color:var(--green);}
+  .doc-row{
+    display:flex;justify-content:space-between;align-items:center;
+    border:1px solid var(--card-border);
+    border-radius:10px;
+    padding:12px 16px;
+    margin-bottom:10px;
+    font-size:13px;
+  }
+  .doc-row .left{display:flex;align-items:center;gap:10px;font-weight:600;}
+  .doc-row .right{display:flex;align-items:center;gap:12px;color:var(--text-dim);}
+  .upload-btn{
+    background:rgba(255,255,255,0.08);
+    color:#e5e7e5;
+    border:none;
+    padding:7px 12px;
+    border-radius:6px;
+    font-size:12px;
+    cursor:pointer;
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN SCREEN ================= -->
+<div id="login-screen">
+  <div class="logo-box">PHB</div>
+  <h1>PDD Portal</h1>
+  <div class="subtitle">Property Development Department</div>
+  <div class="subtitle small">Pelaburan Hartanah Berhad</div>
+
+  <div class="login-card">
+    <h2>Sign In</h2>
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="username" placeholder="e.g. pdd.admin" value="phb.mgmt">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="••••••••" value="PHBTop@2026">
+    </div>
+    <button class="btn-primary" onclick="login()">Sign In</button>
+    <div class="access-note">Access restricted to authorized PDD team members only.</div>
+  </div>
+
+  <div class="demo-box">
+    <strong>Demo Credentials:</strong>
+    <div>Admin: <span>pdd.admin</span> / <span>PDD@2026</span></div>
+    <div>Manager: <span>pdd.manager</span> / <span>PHB@2026</span></div>
+    <div>Member: <span>pdd.user1</span> / <span>PDD1@2026</span></div>
+    <div>Top Mgmt: <span>phb.mgmt</span> / <span>PHBTop@2026</span></div>
+  </div>
+</div>
+
+<!-- ================= MAIN APP ================= -->
+<div id="app">
+  <div class="sidebar">
+    <div class="sidebar-top">
+      <div class="brand">
+        <div class="logo-box">PHB</div>
+        <div class="brand-text"><b>PDD Portal</b><span>Property Development</span></div>
+      </div>
+      <nav>
+        <a class="nav-link active" data-page="dashboard"><span class="left">📊 Dashboard</span></a>
+        <a class="nav-link" data-page="documents"><span class="left">📁 Documents</span></a>
+        <a class="nav-link" data-page="kpi"><span class="left">📈 KPI Tracker</span></a>
+        <a class="nav-link" data-page="reports"><span class="left">📄 Reports</span></a>
+        <a class="nav-link" data-page="folders"><span class="left">🗂 Project Folders</span></a>
+      </nav>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="user-row">
+        <div class="avatar">P</div>
+        <div><b>PDD Admin</b><span>Admin</span></div>
+      </div>
+      <a class="signout" onclick="logout()">↩ Sign Out</a>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+      <h1>Dashboard</h1>
+      <div class="page-desc">FY2026 — Property Development Department Overview · click any field to edit</div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="label">Total Projects</div><div class="value">6</div></div>
+        <div class="stat-card"><div class="label">In Progress</div><div class="value blue">4</div></div>
+        <div class="stat-card"><div class="label">At Risk</div><div class="value amber">2</div></div>
+        <div class="stat-card"><div class="label">Completed</div><div class="value green">0</div></div>
+      </div>
+
+      <div class="section-label">Project Progress Overview</div>
+      <div class="progress-grid">
+        <div class="progress-card">
+          <h3>Bangsar 61</h3>
+          <div class="donut"></div>
+          <div class="pct blue">0%</div>
+          <span class="badge blue">In Progress</span>
+        </div>
+        <div class="progress-card">
+          <h3>Gleneagles KL – Block C</h3>
+          <div class="donut"></div>
+          <div class="pct amber">0%</div>
+          <span class="badge amber">At Risk</span>
+        </div>
+        <div class="progress-card">
+          <h3>Plaza Conlay</h3>
+          <div class="donut"></div>
+          <div class="pct blue">0%</div>
+          <span class="badge blue">In Progress</span>
+        </div>
+      </div>
+
+      <div class="proj-grid">
+        <div class="proj-card">
+          <div class="proj-head">
+            <div><h4>Bangsar 61</h4><div class="type">Mixed-Commercial Development</div></div>
+            <span class="badge blue">In Progress</span>
+          </div>
+          <div class="proj-gdv">GDV: <b>RM 4,858.5 mn</b></div>
+          <div class="proj-note">CPC issued 29 Dec 2025. Partial CCC pending DBKL road widening approval.</div>
+          <div class="target-box">Target<b>BOD Approval – June 2026</b></div>
+          <a class="link-btn">Add Team Note / Status</a>
+        </div>
+        <div class="proj-card">
+          <div class="proj-head">
+            <div><h4>Gleneagles KL – Block C</h4><div class="type">Hospital Development</div></div>
+            <span class="badge amber">At Risk</span>
+          </div>
+          <div class="proj-gdv">GDV: <b>RM 317.6 mn</b></div>
+          <div class="proj-note">TSGPQ suspension ongoing. UMC & IHH engagement in progress.</div>
+          <div class="target-box">Target<b>Way Forward Finalization – June 2026</b></div>
+          <a class="link-btn">Add Team Note / Status</a>
+        </div>
+        <div class="proj-card">
+          <div class="proj-head">
+            <div><h4>Plaza Conlay</h4><div class="type">Mixed-Use Development</div></div>
+            <span class="badge blue">In Progress</span>
+          </div>
+          <div class="proj-gdv">GDV: <b>RM 3.17 bn</b></div>
+          <div class="proj-note">PC issued Feb 2026. CMGD for open carpark targeted July 2026.</div>
+          <div class="target-box">Target<b>CMGD – July 2026</b></div>
+          <a class="link-btn">Add Team Note / Status</a>
+        </div>
+        <div class="proj-card">
+          <div class="proj-head">
+            <div><h4>KPJ 2</h4><div class="type">Hospital Block</div></div>
+            <span class="badge blue">In Progress</span>
+          </div>
+          <div class="proj-gdv">GDV: <b>TBA</b></div>
+          <div class="proj-note">KPJ submitted 2nd LOI on 15 Apr 2026. BOD approval from KPJ expected Aug 2026.</div>
+          <div class="target-box">Target<b>HOT Execution – Aug 2026</b></div>
+          <a class="link-btn">Add Team Note / Status</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Documents -->
+    <div class="page" id="page-documents">
+      <div class="page-header-row">
+        <div><h1>Documents</h1><div class="page-desc">Upload, view, edit and download PDD documents</div></div>
+        <button class="btn-green">⬆ Upload Document</button>
+      </div>
+      <div class="tab-row">
+        <div class="tab-pill active">All</div>
+        <div class="tab-pill">KPI</div>
+        <div class="tab-pill">Monthly Report</div>
+        <div class="tab-pill">Pre-Development Report</div>
+        <div class="tab-pill">Other</div>
+      </div>
+      <div class="empty-state">
+        <div style="font-size:40px;">🗎</div>
+        No documents yet. Upload your first document.
+      </div>
+    </div>
+
+    <!-- KPI Tracker -->
+    <div class="page" id="page-kpi">
+      <div class="kpi-top">
+        <div><h1>KPI Tracker</h1><div class="page-desc">FY2026 Property Development Department KPI · Quarterly alerts to PHB management</div></div>
+        <div class="kpi-stats">
+          <div><b class="green">3</b>Completed</div>
+          <div><b class="amber">0</b>At Risk</div>
+          <div><b>22</b>Total</div>
+          <button class="btn-amber">🔔 Send Q3 Alert</button>
+        </div>
+      </div>
+
+      <div class="kpi-section">
+        <div class="kpi-section-head">Innovation/Knowledge/CSR (10%)</div>
+        <table>
+          <tr><th>KPI</th><th>Base Target</th><th>Stretch Target</th><th>Weight</th><th>Status</th><th>Actual</th><th>Remarks</th></tr>
+          <tr>
+            <td>CSR</td><td>80% staff participation</td><td>90% staff participation</td><td>2.5%</td>
+            <td><span class="status-pill completed">Completed</span></td><td>—</td><td>—</td>
+          </tr>
+          <tr>
+            <td>High Impact Training</td><td>All staff – min 16 training hours</td><td>Base + 2 staff complete prof. certificate</td><td>2.5%</td>
+            <td><span class="status-pill inprogress">In Progress</span></td><td>—</td><td>—</td>
+          </tr>
+          <tr>
+            <td>Re-work Initiative</td><td>2 ideas approved</td><td>Base + 2 fully implemented</td><td>5%</td>
+            <td><span class="status-pill inprogress">In Progress</span></td><td>—</td><td>—</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="kpi-section">
+        <div class="kpi-section-head">Governance (10%)</div>
+        <table>
+          <tr><th>KPI</th><th>Base Target</th><th>Stretch Target</th><th>Weight</th><th>Status</th><th>Actual</th><th>Remarks</th></tr>
+          <tr>
+            <td>Audit findings closure for the Department/Unit (pro-rated agreed timeline)</td><td>80% completion</td><td>90% completion</td><td>2.5%</td>
+            <td><span class="status-pill inprogress">In Progress</span></td><td>—</td><td>—</td>
+          </tr>
+          <tr>
+            <td>Risk closure progress post-BARIC (pro-rated agreed timeline)</td><td>80% completion</td><td>90% completion</td><td>2.5%</td>
+            <td><span class="status-pill inprogress">In Progress</span></td><td>—</td><td>—</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Reports -->
+    <div class="page" id="page-reports">
+      <h1>Project Reports</h1>
+      <div class="page-desc">Monthly Report Card (sorted by month) &amp; Pre-Development Report (bi-weekly)</div>
+      <div class="tab-row">
+        <div class="tab-pill active">Monthly Report Card</div>
+        <div class="tab-pill">Pre-Development Report (Bi-Weekly)</div>
+      </div>
+      <div class="page-header-row" style="margin-bottom:16px;">
+        <div class="page-desc" style="margin:0;">Sorted newest first · upload PDF/PPTX per month · click fields to edit</div>
+        <button class="btn-green">+ Add Month</button>
+      </div>
+      <div class="report-row">
+        <div class="left">📅 June 2026</div>
+        <div class="actions">
+          <button class="btn-outline">⬆ Upload</button>
+          <button class="btn-download">⬇ Download</button>
+          <button class="btn-outline">▾</button>
+          <button class="btn-outline" style="color:#f87171;">🗑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Project Folders -->
+    <div class="page" id="page-folders">
+      <h1>Project Folders</h1>
+      <div class="page-desc">Documents organised by category per project · Separate IPC tracking for Contractor &amp; Consultant</div>
+
+      <div class="folder-card">
+        <div class="folder-head">
+          <div class="left">
+            📁
+            <div>
+              <h4>Bangsar 61</h4>
+              <div class="sub">Mixed-Commercial Development · GDV: RM 4,858.5 mn · 0 docs · 0 IPC entries</div>
+            </div>
+          </div>
+          <div>▾</div>
+        </div>
+        <div class="folder-body">
+          <div class="folder-tabs">
+            <div class="folder-tab active">Documents</div>
+            <div class="folder-tab">IPC Tracking</div>
+          </div>
+          <div class="doc-row"><div class="left">🗎 Correspondence In</div><div class="right">0 files <button class="upload-btn">⬆ Upload</button> ▾</div></div>
+          <div class="doc-row"><div class="left">🗎 Correspondence Out</div><div class="right">0 files <button class="upload-btn">⬆ Upload</button> ▾</div></div>
+        </div><!-- /folder-body -->
+      </div><!-- /folder-card -->
+    </div><!-- /page-folders -->
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+  const USERS = {
+    "pdd.admin":   { password: "PDD@2026",    name: "PDD Admin",      role: "Admin" },
+    "pdd.manager": { password: "PHB@2026",    name: "PDD Manager",    role: "Manager" },
+    "pdd.user1":   { password: "PDD1@2026",   name: "PDD Member",     role: "Member" },
+    "phb.mgmt":    { password: "PHBTop@2026", name: "PHB Management", role: "Top Mgmt" }
+  };
+
+  function login() {
+    const u = document.getElementById("username").value.trim().toLowerCase();
+    const p = document.getElementById("password").value;
+    const user = USERS[u];
+    if (!user || user.password !== p) {
+      alert("Invalid username or password.");
+      return;
+    }
+    document.querySelector(".user-row b").textContent = user.name;
+    document.querySelector(".user-row span").textContent = user.role;
+    document.querySelector(".avatar").textContent = user.name.charAt(0);
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    showPage("dashboard");
+  }
+
+  function logout() {
+    document.getElementById("app").style.display = "none";
+    document.getElementById("login-screen").style.display = "flex";
+    document.getElementById("password").value = "";
+  }
+
+  function showPage(name) {
+    document.querySelectorAll(".nav-link").forEach(a =>
+      a.classList.toggle("active", a.dataset.page === name));
+    document.querySelectorAll(".page").forEach(pg =>
+      pg.classList.toggle("active", pg.id === "page-" + name));
+  }
+
+  document.querySelectorAll(".nav-link").forEach(a =>
+    a.addEventListener("click", () => showPage(a.dataset.page)));
+
+  // Press Enter in either field to sign in
+  ["username", "password"].forEach(id =>
+    document.getElementById(id).addEventListener("keydown", e => {
+      if (e.key === "Enter") login();
+    }));
+</script>
+</body>
+</html>
