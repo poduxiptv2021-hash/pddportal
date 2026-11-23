@@ -530,7 +530,7 @@ function enterApp(){
 }
 function logout(){
   ME_U = null; sessionStorage.removeItem(SESSION_KEY); closeModal(true);
-  $('#app').style.display = 'none'; $('#login-screen').style.display = 'flex'; $('#username').focus();
+  $('#app').style.display = 'none'; $('#login-screen').style.display = ''; $('#username').focus();
 }
 function changePassword(forced){
   openForm({
