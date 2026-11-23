@@ -3,362 +3,148 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
 <title>PDD Portal</title>
 <style>
   :root{
-    --bg:#0a1a12;
-    --bg-light:#0f2318;
-    --card:rgba(255,255,255,0.05);
-    --card-border:rgba(255,255,255,0.1);
-    --green:#10b981;
-    --green-dark:#0d9668;
-    --amber:#d99a1b;
-    --blue:#3b82f6;
-    --text:#f5f5f4;
-    --text-dim:#9ca3a1;
+    --bg:#0a1a12; --bg-light:#0f2318; --card:rgba(255,255,255,0.05); --card-border:rgba(255,255,255,0.1);
+    --green:#10b981; --green-dark:#0d9668; --amber:#d99a1b; --blue:#3b82f6; --red:#f87171; --grey:#9ca3a1;
+    --text:#f5f5f4; --text-dim:#9ca3a1;
   }
   *{box-sizing:border-box;}
-  body{
-    margin:0;
-    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    background:var(--bg);
-    color:var(--text);
-  }
+  body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);}
+  button{font-family:inherit;}
+  button:disabled{opacity:.45;cursor:not-allowed;}
+  .muted{color:var(--text-dim);} .small{font-size:12px;} .pad{padding:10px 0;}
+  .hidden{display:none !important;}
+
   /* ---------- LOGIN ---------- */
-  #login-screen{
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    background:radial-gradient(circle at top, #163d29, #0a1a12 70%);
-    padding:20px;
-  }
-  .logo-box{
-    width:64px;height:64px;border-radius:14px;
-    background:var(--green);
-    display:flex;align-items:center;justify-content:center;
-    font-weight:800;font-size:20px;color:#06281c;
-    margin-bottom:16px;
-  }
+  #login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at top,#163d29,#0a1a12 70%);padding:20px;}
+  .logo-box{width:64px;height:64px;border-radius:14px;background:var(--green);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#06281c;margin-bottom:16px;}
   #login-screen h1{margin:0;font-size:28px;font-weight:800;}
   .subtitle{color:var(--text-dim);margin-top:6px;text-align:center;}
   .subtitle.small{font-size:13px;margin-top:2px;}
-  .login-card{
-    background:var(--bg-light);
-    border:1px solid var(--card-border);
-    border-radius:16px;
-    padding:32px;
-    width:100%;
-    max-width:380px;
-    margin-top:28px;
-  }
+  .login-card{background:var(--bg-light);border:1px solid var(--card-border);border-radius:16px;padding:32px;width:100%;max-width:380px;margin-top:28px;}
   .login-card h2{margin:0 0 20px;font-size:20px;font-weight:700;}
   .field label{font-size:13px;color:var(--text-dim);display:block;margin-bottom:6px;}
-  .field input{
-    width:100%;
-    padding:12px 14px;
-    border-radius:8px;
-    border:none;
-    background:#eef2f6;
-    color:#111;
-    font-size:14px;
-    margin-bottom:18px;
-  }
-  .btn-primary{
-    width:100%;
-    padding:13px;
-    border-radius:8px;
-    border:none;
-    background:var(--green);
-    color:#06281c;
-    font-weight:700;
-    font-size:15px;
-    cursor:pointer;
-  }
+  .field input,.field select,.field textarea{width:100%;padding:11px 13px;border-radius:8px;border:none;background:#eef2f6;color:#111;font-size:14px;margin-bottom:16px;font-family:inherit;}
+  .field input[type=file]{background:rgba(255,255,255,.08);color:var(--text);}
+  .field textarea{resize:vertical;}
+  .field .hint{font-size:12px;color:var(--text-dim);margin:-10px 0 14px;}
+  .btn-primary{width:100%;padding:13px;border-radius:8px;border:none;background:var(--green);color:#06281c;font-weight:700;font-size:15px;cursor:pointer;}
   .btn-primary:hover{background:var(--green-dark);}
-  .access-note{
-    text-align:center;
-    color:var(--text-dim);
-    font-size:12px;
-    margin-top:16px;
-  }
-  .demo-box{
-    width:100%;
-    max-width:380px;
-    margin-top:20px;
-    background:var(--card);
-    border:1px solid var(--card-border);
-    border-radius:12px;
-    padding:16px 20px;
-    font-size:13px;
-    color:var(--text-dim);
-  }
-  .demo-box div{margin-top:4px;}
-  .demo-box strong{color:#d8dcd8;}
-  .demo-box span{color:var(--green);}
+  .access-note{text-align:center;color:var(--text-dim);font-size:12px;margin-top:16px;}
+  .error-msg{background:rgba(248,113,113,.12);color:var(--red);border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:14px;}
 
   /* ---------- APP LAYOUT ---------- */
   #app{display:none;min-height:100vh;}
-  .sidebar{
-    width:250px;
-    background:var(--bg-light);
-    border-right:1px solid var(--card-border);
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
-    position:fixed;
-    top:0;left:0;bottom:0;
-  }
+  .sidebar{width:250px;background:var(--bg-light);border-right:1px solid var(--card-border);min-height:100vh;display:flex;flex-direction:column;justify-content:space-between;position:fixed;top:0;left:0;bottom:0;overflow-y:auto;}
   .sidebar-top{padding:20px;}
   .brand{display:flex;align-items:center;gap:10px;margin-bottom:28px;}
   .brand .logo-box{width:36px;height:36px;font-size:13px;margin:0;border-radius:8px;}
   .brand-text b{display:block;font-size:15px;}
   .brand-text span{font-size:11px;color:var(--text-dim);}
-  nav a{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    padding:11px 14px;
-    border-radius:8px;
-    color:#cfd6d2;
-    text-decoration:none;
-    font-size:14px;
-    margin-bottom:4px;
-    cursor:pointer;
-  }
-  nav a .left{display:flex;align-items:center;gap:10px;}
+  nav a{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:8px;color:#cfd6d2;text-decoration:none;font-size:14px;margin-bottom:4px;cursor:pointer;}
   nav a:hover{background:rgba(255,255,255,0.06);}
   nav a.active{background:var(--green);color:#06281c;font-weight:600;}
   .sidebar-bottom{padding:20px;border-top:1px solid var(--card-border);}
   .user-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
-  .avatar{
-    width:32px;height:32px;border-radius:50%;
-    background:var(--green);color:#06281c;
-    display:flex;align-items:center;justify-content:center;
-    font-weight:700;font-size:13px;
-  }
+  .avatar{width:32px;height:32px;border-radius:50%;background:var(--green);color:#06281c;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;}
   .user-row b{display:block;font-size:13px;}
   .user-row span{font-size:11px;color:var(--text-dim);}
-  .signout{color:#f87171;font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px;cursor:pointer;}
+  .side-link{color:var(--text-dim);font-size:13px;display:block;margin-bottom:8px;cursor:pointer;}
+  .side-link:hover{color:var(--text);}
+  .signout{color:var(--red);font-size:13px;cursor:pointer;}
 
-  .main{margin-left:250px;padding:32px 40px;flex:1;}
+  .main{margin-left:250px;padding:32px 40px;}
   .page{display:none;}
   .page.active{display:block;}
   .page h1{font-size:26px;margin:0 0 6px;font-weight:800;}
   .page-desc{color:var(--text-dim);font-size:14px;margin-bottom:26px;}
+  .page-header-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;}
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap;}
 
-  /* Dashboard stat cards */
-  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;}
-  .stat-card{
-    background:var(--card);
-    border:1px solid var(--card-border);
-    border-radius:12px;
-    padding:18px 20px;
-  }
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:32px;}
+  .stat-card{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:18px 20px;}
   .stat-card .label{font-size:11px;letter-spacing:0.06em;color:var(--text-dim);text-transform:uppercase;}
   .stat-card .value{font-size:28px;font-weight:800;margin-top:6px;}
-  .value.blue{color:var(--blue);}
-  .value.amber{color:var(--amber);}
-  .value.green{color:var(--green);}
-
+  .blue{color:var(--blue);} .amber{color:var(--amber);} .green{color:var(--green);}
   .section-label{font-size:12px;letter-spacing:0.08em;color:var(--text-dim);text-transform:uppercase;margin-bottom:14px;}
 
-  .progress-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:10px;}
-  .progress-card{
-    background:var(--card);
-    border:1px solid var(--card-border);
-    border-radius:12px;
-    padding:24px;
-    text-align:center;
-  }
+  .progress-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px;margin-bottom:10px;}
+  .progress-card{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:24px;text-align:center;}
   .progress-card h3{margin:0 0 16px;font-size:15px;font-weight:700;}
-  .donut{
-    width:90px;height:90px;border-radius:50%;
-    border:6px solid rgba(255,255,255,0.12);
-    margin:0 auto 14px;
-    display:flex;align-items:center;justify-content:center;
-  }
-  .pct{font-weight:700;font-size:18px;margin-bottom:14px;}
-  .pct.blue{color:var(--blue);}
-  .pct.amber{color:var(--amber);}
-  .badge{
-    display:inline-block;
-    padding:5px 14px;
-    border-radius:20px;
-    font-size:12px;
-    font-weight:600;
-  }
+  .donut{width:96px;height:96px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;
+    background:conic-gradient(var(--c) calc(var(--p) * 1%), rgba(255,255,255,0.12) 0);}
+  .donut span{width:78px;height:78px;border-radius:50%;background:#12251a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;}
+  .badge{display:inline-block;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;}
   .badge.blue{background:rgba(59,130,246,0.15);color:#60a5fa;}
   .badge.amber{background:rgba(217,154,27,0.15);color:#e0ac3c;}
   .badge.green{background:rgba(16,185,129,0.15);color:var(--green);}
+  .badge.grey{background:rgba(255,255,255,0.08);color:#cfd6d2;}
 
-  /* Project cards (Dashboard scroll list) */
   .proj-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:24px;}
-  .proj-card{
-    background:var(--card);
-    border:1px solid var(--card-border);
-    border-radius:12px;
-    padding:20px;
-  }
-  .proj-head{display:flex;justify-content:space-between;align-items:flex-start;}
+  .proj-card{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:20px;display:flex;flex-direction:column;}
+  .proj-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
   .proj-head h4{margin:0;font-size:16px;}
   .proj-head .type{font-size:12px;color:var(--text-dim);margin-top:2px;}
   .proj-gdv{margin:10px 0;font-size:13px;color:var(--text-dim);}
   .proj-gdv b{color:var(--green);}
-  .proj-note{font-size:13px;color:#d5d9d6;margin-bottom:14px;line-height:1.5;}
-  .target-box{
-    background:rgba(255,255,255,0.05);
-    border-radius:8px;
-    padding:10px 14px;
-    font-size:12px;
-    color:var(--text-dim);
-    margin-bottom:12px;
-  }
+  .proj-note{font-size:13px;color:#d5d9d6;margin-bottom:14px;line-height:1.5;white-space:pre-wrap;}
+  .target-box{background:rgba(255,255,255,0.05);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text-dim);margin-bottom:12px;}
   .target-box b{display:block;color:#e5e7e5;font-size:13px;margin-top:2px;}
-  .link-btn{
-    display:block;
-    text-align:center;
-    border:1px solid var(--card-border);
-    border-radius:8px;
-    padding:9px;
-    color:var(--green);
-    font-size:13px;
-    text-decoration:none;
-    cursor:pointer;
-  }
+  .note{border-left:2px solid var(--green);padding:4px 10px;margin-bottom:8px;font-size:13px;white-space:pre-wrap;}
+  .notes{margin-bottom:12px;}
+  .proj-card .btn-row{margin-top:auto;}
+  .link-btn{flex:1;text-align:center;border:1px solid var(--card-border);background:none;border-radius:8px;padding:9px;color:var(--green);font-size:13px;cursor:pointer;white-space:nowrap;}
   .link-btn:hover{background:rgba(16,185,129,0.08);}
+  .link-btn.red{color:var(--red);flex:0;}
 
-  /* Documents */
-  .tab-row{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;}
-  .tab-pill{
-    padding:9px 18px;
-    border-radius:8px;
-    background:rgba(255,255,255,0.06);
-    color:#cfd6d2;
-    font-size:13px;
-    cursor:pointer;
-    border:1px solid transparent;
-  }
+  .tab-row{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+  .tab-pill{padding:9px 16px;border-radius:8px;background:rgba(255,255,255,0.06);color:#cfd6d2;font-size:13px;cursor:pointer;user-select:none;}
   .tab-pill.active{background:var(--green);color:#06281c;font-weight:600;}
-  .empty-state{
-    text-align:center;
-    padding:80px 20px;
-    color:var(--text-dim);
-  }
-  .empty-state svg{margin-bottom:14px;opacity:0.4;}
-  .page-header-row{display:flex;justify-content:space-between;align-items:flex-start;}
-  .btn-green{
-    background:var(--green);
-    color:#06281c;
-    border:none;
-    padding:11px 18px;
-    border-radius:8px;
-    font-weight:600;
-    font-size:13px;
-    cursor:pointer;
-    white-space:nowrap;
-  }
+  .tab-pill .count{opacity:.7;margin-left:4px;}
+  .search{width:100%;max-width:420px;padding:10px 13px;border-radius:8px;border:1px solid var(--card-border);background:rgba(255,255,255,.06);color:var(--text);font-size:14px;margin-bottom:18px;}
+  .empty-state{text-align:center;padding:70px 20px;color:var(--text-dim);}
+  .btn-green{background:var(--green);color:#06281c;border:none;padding:11px 18px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap;}
+  .btn-green:hover{background:var(--green-dark);}
+  .btn-amber{background:#3a2c0f;border:1px solid #6b5219;color:#e0ac3c;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;}
+  .btn-outline{background:rgba(255,255,255,0.06);border:none;color:#e5e7e5;padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;}
+  .btn-download{background:rgba(16,185,129,0.15);color:var(--green);border:none;padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;}
+  .btn-sm{background:rgba(255,255,255,0.07);border:none;color:#e5e7e5;padding:5px 10px;border-radius:6px;font-size:12px;cursor:pointer;}
+  .btn-sm.green{color:var(--green);background:rgba(16,185,129,.12);}
+  .btn-sm.red{color:var(--red);}
+  .btn-red{background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.3);padding:10px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;}
 
-  /* KPI Tracker */
-  .kpi-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;}
-  .kpi-stats{display:flex;gap:24px;align-items:center;}
+  .kpi-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:16px;flex-wrap:wrap;}
+  .kpi-stats{display:flex;gap:22px;align-items:center;flex-wrap:wrap;}
   .kpi-stats div{text-align:center;font-size:13px;color:var(--text-dim);}
-  .kpi-stats b{display:block;font-size:18px;}
-  .kpi-stats b.green{color:var(--green);}
-  .kpi-stats b.amber{color:var(--amber);}
-  .btn-amber{
-    background:#3a2c0f;
-    border:1px solid #6b5219;
-    color:#e0ac3c;
-    padding:10px 16px;
-    border-radius:8px;
-    font-size:13px;
-    font-weight:600;
-    cursor:pointer;
-  }
-  .kpi-section{
-    background:var(--card);
-    border:1px solid var(--card-border);
-    border-radius:12px;
-    margin-bottom:20px;
-    overflow:hidden;
-  }
-  .kpi-section-head{
-    background:rgba(16,185,129,0.08);
-    color:var(--green);
-    font-weight:700;
-    font-size:14px;
-    padding:14px 20px;
-  }
+  .kpi-stats b{display:block;font-size:18px;color:var(--text);}
+  .kpi-section{background:var(--card);border:1px solid var(--card-border);border-radius:12px;margin-bottom:20px;overflow:hidden;}
+  .kpi-section-head{background:rgba(16,185,129,0.08);color:var(--green);font-weight:700;font-size:14px;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+  .table-wrap{overflow-x:auto;}
   table{width:100%;border-collapse:collapse;font-size:13px;}
-  th{
-    text-align:left;
-    color:var(--text-dim);
-    font-weight:600;
-    padding:10px 20px;
-    border-bottom:1px solid var(--card-border);
-    font-size:12px;
-  }
-  td{padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:top;}
+  th{text-align:left;color:var(--text-dim);font-weight:600;padding:10px 16px;border-bottom:1px solid var(--card-border);font-size:12px;white-space:nowrap;}
+  td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:top;}
   tr:last-child td{border-bottom:none;}
-  .status-pill{
-    padding:4px 12px;
-    border-radius:20px;
-    font-size:12px;
-    font-weight:600;
-    display:inline-block;
-  }
+  td.actions,div.actions{white-space:nowrap;display:flex;gap:6px;flex-wrap:wrap;}
+  tr.total td{font-weight:700;border-top:1px solid var(--card-border);}
+  .status-pill{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;display:inline-block;white-space:nowrap;}
   .status-pill.completed{background:rgba(16,185,129,0.15);color:var(--green);}
   .status-pill.inprogress{background:rgba(59,130,246,0.15);color:#60a5fa;}
+  .status-pill.atrisk{background:rgba(217,154,27,0.15);color:#e0ac3c;}
+  .status-pill.notstarted{background:rgba(255,255,255,0.08);color:#cfd6d2;}
 
-  /* Reports */
-  .report-row{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    background:var(--card);
-    border:1px solid var(--card-border);
-    border-radius:12px;
-    padding:16px 20px;
-    margin-bottom:12px;
-  }
+  .report-block{background:var(--card);border:1px solid var(--card-border);border-radius:12px;margin-bottom:12px;}
+  .report-row{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;gap:10px;flex-wrap:wrap;}
   .report-row .left{display:flex;align-items:center;gap:10px;font-weight:600;}
-  .report-row .actions{display:flex;gap:10px;align-items:center;}
-  .btn-outline{
-    background:rgba(255,255,255,0.06);
-    border:none;
-    color:#e5e7e5;
-    padding:8px 14px;
-    border-radius:8px;
-    font-size:13px;
-    cursor:pointer;
-  }
-  .btn-download{
-    background:rgba(16,185,129,0.15);
-    color:var(--green);
-    border:none;
-    padding:8px 14px;
-    border-radius:8px;
-    font-size:13px;
-    cursor:pointer;
-    font-weight:600;
-  }
+  .report-row .actions{display:flex;gap:8px;align-items:center;}
+  .report-files,.cat-files{padding:0 20px 12px;}
+  .file-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid rgba(255,255,255,.06);font-size:13px;flex-wrap:wrap;}
 
-  /* Project Folders */
-  .folder-card{
-    background:var(--card);
-    border:1px solid var(--card-border);
-    border-radius:12px;
-    margin-bottom:20px;
-    overflow:hidden;
-  }
-  .folder-head{
-    display:flex;justify-content:space-between;align-items:center;
-    padding:18px 22px;cursor:pointer;
-  }
+  .folder-card{background:var(--card);border:1px solid var(--card-border);border-radius:12px;margin-bottom:16px;overflow:hidden;}
+  .folder-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;cursor:pointer;}
+  .folder-head:hover{background:rgba(255,255,255,.03);}
   .folder-head .left{display:flex;align-items:center;gap:10px;}
   .folder-head h4{margin:0;font-size:16px;}
   .folder-head .sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
@@ -366,30 +152,54 @@
   .folder-tabs{display:flex;gap:20px;border-bottom:1px solid var(--card-border);margin-bottom:14px;}
   .folder-tab{padding:8px 2px 12px;font-size:13px;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;}
   .folder-tab.active{color:var(--green);border-bottom-color:var(--green);}
-  .doc-row{
-    display:flex;justify-content:space-between;align-items:center;
-    border:1px solid var(--card-border);
-    border-radius:10px;
-    padding:12px 16px;
-    margin-bottom:10px;
-    font-size:13px;
-  }
+  .doc-wrap{border:1px solid var(--card-border);border-radius:10px;margin-bottom:10px;}
+  .doc-row{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;font-size:13px;}
   .doc-row .left{display:flex;align-items:center;gap:10px;font-weight:600;}
-  .doc-row .right{display:flex;align-items:center;gap:12px;color:var(--text-dim);}
-  .upload-btn{
-    background:rgba(255,255,255,0.08);
-    color:#e5e7e5;
-    border:none;
-    padding:7px 12px;
-    border-radius:6px;
-    font-size:12px;
-    cursor:pointer;
+  .doc-row .right{display:flex;align-items:center;gap:10px;color:var(--text-dim);}
+  .upload-btn{background:rgba(255,255,255,0.08);color:#e5e7e5;border:none;padding:7px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
+  .ipc-block{margin-bottom:22px;border:1px solid var(--card-border);border-radius:10px;overflow:hidden;}
+  .ipc-head{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:rgba(255,255,255,.04);}
+
+  .admin-card{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:20px;margin-bottom:20px;}
+  .admin-card h3{margin:0 0 6px;font-size:16px;}
+  .warn-box{background:rgba(217,154,27,.12);border:1px solid rgba(217,154,27,.35);color:#f0c46a;border-radius:10px;padding:12px 16px;font-size:13px;margin-bottom:20px;line-height:1.5;}
+
+  /* Modal + toast */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:50;overflow-y:auto;}
+  .modal{background:var(--bg-light);border:1px solid var(--card-border);border-radius:14px;width:100%;max-width:520px;padding:22px 24px;}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .modal-head h3{margin:0;font-size:18px;}
+  .x{background:none;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;}
+  .modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:4px;}
+  .history{max-height:200px;overflow-y:auto;margin-bottom:14px;}
+  .toast{position:fixed;bottom:24px;right:24px;background:#1d3a2a;border:1px solid var(--card-border);color:var(--text);padding:12px 18px;border-radius:10px;font-size:14px;opacity:0;transform:translateY(10px);transition:.2s;pointer-events:none;z-index:60;max-width:360px;}
+  .toast.show{opacity:1;transform:none;}
+  .toast.err{background:#3a1a1a;border-color:rgba(248,113,113,.4);}
+  .toast.ok{border-color:rgba(16,185,129,.5);}
+
+  @media (max-width:900px){
+    .sidebar{position:static;width:100%;min-height:0;}
+    .main{margin-left:0;padding:20px;}
+    nav{display:flex;flex-wrap:wrap;gap:4px;}
+    nav a{margin:0;}
+    .proj-grid{grid-template-columns:1fr;}
   }
+  .crumbs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px;margin-bottom:16px;}
+  .crumbs a{color:var(--green);cursor:pointer;}
+  .crumbs span.sep{color:var(--text-dim);}
+  .row-folder{cursor:pointer;}
+  .row-folder:hover{background:rgba(255,255,255,.03);}
+  a.btn-sm{text-decoration:none;display:inline-block;}
+  .ms-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;border-radius:8px;border:1px solid #8c8c8c;background:#fff;color:#1b1b1b;font-weight:600;font-size:15px;cursor:pointer;}
+  .ms-btn:hover{background:#f3f3f3;}
+  .ms-logo{display:grid;grid-template-columns:9px 9px;gap:2px;}
+  .ms-logo i{width:9px;height:9px;display:block;}
+  .info-msg{background:rgba(59,130,246,.12);color:#93c5fd;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:14px;line-height:1.5;}
 </style>
 </head>
 <body>
 
-<!-- ================= LOGIN SCREEN ================= -->
+<!-- ================= SIGN-IN SCREEN ================= -->
 <div id="login-screen">
   <div class="logo-box">PHB</div>
   <h1>PDD Portal</h1>
@@ -398,24 +208,13 @@
 
   <div class="login-card">
     <h2>Sign In</h2>
-    <div class="field">
-      <label>Username</label>
-      <input type="text" id="username" placeholder="e.g. pdd.admin" value="phb.mgmt">
-    </div>
-    <div class="field">
-      <label>Password</label>
-      <input type="password" id="password" placeholder="••••••••" value="PHBTop@2026">
-    </div>
-    <button class="btn-primary" onclick="login()">Sign In</button>
-    <div class="access-note">Access restricted to authorized PDD team members only.</div>
-  </div>
-
-  <div class="demo-box">
-    <strong>Demo Credentials:</strong>
-    <div>Admin: <span>pdd.admin</span> / <span>PDD@2026</span></div>
-    <div>Manager: <span>pdd.manager</span> / <span>PHB@2026</span></div>
-    <div>Member: <span>pdd.user1</span> / <span>PDD1@2026</span></div>
-    <div>Top Mgmt: <span>phb.mgmt</span> / <span>PHBTop@2026</span></div>
+    <div id="login-msg" class="hidden"></div>
+    <button type="button" class="ms-btn" id="btn-signin">
+      <span class="ms-logo"><i style="background:#f25022"></i><i style="background:#7fba00"></i><i style="background:#00a4ef"></i><i style="background:#ffb900"></i></span>
+      Sign in with Microsoft
+    </button>
+    <button type="button" class="btn-outline hidden" id="btn-signout-login" style="width:100%;margin-top:10px">Sign out</button>
+    <div class="access-note">Use your PHB Microsoft 365 account.<br>Access restricted to authorized PDD team members only.</div>
   </div>
 </div>
 
@@ -428,266 +227,998 @@
         <div class="brand-text"><b>PDD Portal</b><span>Property Development</span></div>
       </div>
       <nav>
-        <a class="nav-link active" data-page="dashboard"><span class="left">📊 Dashboard</span></a>
-        <a class="nav-link" data-page="documents"><span class="left">📁 Documents</span></a>
-        <a class="nav-link" data-page="kpi"><span class="left">📈 KPI Tracker</span></a>
-        <a class="nav-link" data-page="reports"><span class="left">📄 Reports</span></a>
-        <a class="nav-link" data-page="folders"><span class="left">🗂 Project Folders</span></a>
+        <a class="nav-link" data-act="nav" data-page="dashboard">📊 Dashboard</a>
+        <a class="nav-link" data-act="nav" data-page="documents">📁 Documents</a>
+        <a class="nav-link" data-act="nav" data-page="kpi">📈 KPI Tracker</a>
+        <a class="nav-link" data-act="nav" data-page="reports">📄 Reports</a>
+        <a class="nav-link" data-act="nav" data-page="folders">🗂 Project Folders</a>
+        <a class="nav-link" data-act="nav" data-page="admin" id="nav-admin">⚙️ Admin</a>
       </nav>
     </div>
     <div class="sidebar-bottom">
       <div class="user-row">
-        <div class="avatar">P</div>
-        <div><b>PDD Admin</b><span>Admin</span></div>
+        <div class="avatar" id="me-avatar">P</div>
+        <div><b id="me-name">—</b><span id="me-role">—</span></div>
       </div>
-      <a class="signout" onclick="logout()">↩ Sign Out</a>
+      <a class="signout" data-act="logout">↩ Sign Out</a>
     </div>
   </div>
 
   <div class="main">
+    <div class="page" id="page-dashboard"></div>
+    <div class="page" id="page-documents"></div>
+    <div class="page" id="page-kpi"></div>
+    <div class="page" id="page-reports"></div>
+    <div class="page" id="page-folders"></div>
+    <div class="page" id="page-admin"></div>
+  </div>
+</div>
 
-    <!-- Dashboard -->
-    <div class="page active" id="page-dashboard">
-      <h1>Dashboard</h1>
-      <div class="page-desc">FY2026 — Property Development Department Overview · click any field to edit</div>
-
-      <div class="stat-grid">
-        <div class="stat-card"><div class="label">Total Projects</div><div class="value">6</div></div>
-        <div class="stat-card"><div class="label">In Progress</div><div class="value blue">4</div></div>
-        <div class="stat-card"><div class="label">At Risk</div><div class="value amber">2</div></div>
-        <div class="stat-card"><div class="label">Completed</div><div class="value green">0</div></div>
-      </div>
-
-      <div class="section-label">Project Progress Overview</div>
-      <div class="progress-grid">
-        <div class="progress-card">
-          <h3>Bangsar 61</h3>
-          <div class="donut"></div>
-          <div class="pct blue">0%</div>
-          <span class="badge blue">In Progress</span>
-        </div>
-        <div class="progress-card">
-          <h3>Gleneagles KL – Block C</h3>
-          <div class="donut"></div>
-          <div class="pct amber">0%</div>
-          <span class="badge amber">At Risk</span>
-        </div>
-        <div class="progress-card">
-          <h3>Plaza Conlay</h3>
-          <div class="donut"></div>
-          <div class="pct blue">0%</div>
-          <span class="badge blue">In Progress</span>
-        </div>
-      </div>
-
-      <div class="proj-grid">
-        <div class="proj-card">
-          <div class="proj-head">
-            <div><h4>Bangsar 61</h4><div class="type">Mixed-Commercial Development</div></div>
-            <span class="badge blue">In Progress</span>
-          </div>
-          <div class="proj-gdv">GDV: <b>RM 4,858.5 mn</b></div>
-          <div class="proj-note">CPC issued 29 Dec 2025. Partial CCC pending DBKL road widening approval.</div>
-          <div class="target-box">Target<b>BOD Approval – June 2026</b></div>
-          <a class="link-btn">Add Team Note / Status</a>
-        </div>
-        <div class="proj-card">
-          <div class="proj-head">
-            <div><h4>Gleneagles KL – Block C</h4><div class="type">Hospital Development</div></div>
-            <span class="badge amber">At Risk</span>
-          </div>
-          <div class="proj-gdv">GDV: <b>RM 317.6 mn</b></div>
-          <div class="proj-note">TSGPQ suspension ongoing. UMC & IHH engagement in progress.</div>
-          <div class="target-box">Target<b>Way Forward Finalization – June 2026</b></div>
-          <a class="link-btn">Add Team Note / Status</a>
-        </div>
-        <div class="proj-card">
-          <div class="proj-head">
-            <div><h4>Plaza Conlay</h4><div class="type">Mixed-Use Development</div></div>
-            <span class="badge blue">In Progress</span>
-          </div>
-          <div class="proj-gdv">GDV: <b>RM 3.17 bn</b></div>
-          <div class="proj-note">PC issued Feb 2026. CMGD for open carpark targeted July 2026.</div>
-          <div class="target-box">Target<b>CMGD – July 2026</b></div>
-          <a class="link-btn">Add Team Note / Status</a>
-        </div>
-        <div class="proj-card">
-          <div class="proj-head">
-            <div><h4>KPJ 2</h4><div class="type">Hospital Block</div></div>
-            <span class="badge blue">In Progress</span>
-          </div>
-          <div class="proj-gdv">GDV: <b>TBA</b></div>
-          <div class="proj-note">KPJ submitted 2nd LOI on 15 Apr 2026. BOD approval from KPJ expected Aug 2026.</div>
-          <div class="target-box">Target<b>HOT Execution – Aug 2026</b></div>
-          <a class="link-btn">Add Team Note / Status</a>
-        </div>
-      </div>
+<!-- ================= MODAL / TOAST ================= -->
+<div id="modal" class="modal-bg hidden">
+  <form class="modal" id="modal-form" novalidate>
+    <div class="modal-head"><h3 id="modal-title"></h3><button type="button" class="x" data-act="close-modal">✕</button></div>
+    <div id="modal-error" class="error-msg hidden"></div>
+    <div id="modal-extra"></div>
+    <div id="modal-body"></div>
+    <div class="modal-foot">
+      <button type="button" class="btn-outline" data-act="close-modal">Cancel</button>
+      <button type="submit" class="btn-green" id="modal-submit">Save</button>
     </div>
-
-    <!-- Documents -->
-    <div class="page" id="page-documents">
-      <div class="page-header-row">
-        <div><h1>Documents</h1><div class="page-desc">Upload, view, edit and download PDD documents</div></div>
-        <button class="btn-green">⬆ Upload Document</button>
-      </div>
-      <div class="tab-row">
-        <div class="tab-pill active">All</div>
-        <div class="tab-pill">KPI</div>
-        <div class="tab-pill">Monthly Report</div>
-        <div class="tab-pill">Pre-Development Report</div>
-        <div class="tab-pill">Other</div>
-      </div>
-      <div class="empty-state">
-        <div style="font-size:40px;">🗎</div>
-        No documents yet. Upload your first document.
-      </div>
-    </div>
-
-    <!-- KPI Tracker -->
-    <div class="page" id="page-kpi">
-      <div class="kpi-top">
-        <div><h1>KPI Tracker</h1><div class="page-desc">FY2026 Property Development Department KPI · Quarterly alerts to PHB management</div></div>
-        <div class="kpi-stats">
-          <div><b class="green">3</b>Completed</div>
-          <div><b class="amber">0</b>At Risk</div>
-          <div><b>22</b>Total</div>
-          <button class="btn-amber">🔔 Send Q3 Alert</button>
-        </div>
-      </div>
-
-      <div class="kpi-section">
-        <div class="kpi-section-head">Innovation/Knowledge/CSR (10%)</div>
-        <table>
-          <tr><th>KPI</th><th>Base Target</th><th>Stretch Target</th><th>Weight</th><th>Status</th><th>Actual</th><th>Remarks</th></tr>
-          <tr>
-            <td>CSR</td><td>80% staff participation</td><td>90% staff participation</td><td>2.5%</td>
-            <td><span class="status-pill completed">Completed</span></td><td>—</td><td>—</td>
-          </tr>
-          <tr>
-            <td>High Impact Training</td><td>All staff – min 16 training hours</td><td>Base + 2 staff complete prof. certificate</td><td>2.5%</td>
-            <td><span class="status-pill inprogress">In Progress</span></td><td>—</td><td>—</td>
-          </tr>
-          <tr>
-            <td>Re-work Initiative</td><td>2 ideas approved</td><td>Base + 2 fully implemented</td><td>5%</td>
-            <td><span class="status-pill inprogress">In Progress</span></td><td>—</td><td>—</td>
-          </tr>
-        </table>
-      </div>
-
-      <div class="kpi-section">
-        <div class="kpi-section-head">Governance (10%)</div>
-        <table>
-          <tr><th>KPI</th><th>Base Target</th><th>Stretch Target</th><th>Weight</th><th>Status</th><th>Actual</th><th>Remarks</th></tr>
-          <tr>
-            <td>Audit findings closure for the Department/Unit (pro-rated agreed timeline)</td><td>80% completion</td><td>90% completion</td><td>2.5%</td>
-            <td><span class="status-pill inprogress">In Progress</span></td><td>—</td><td>—</td>
-          </tr>
-          <tr>
-            <td>Risk closure progress post-BARIC (pro-rated agreed timeline)</td><td>80% completion</td><td>90% completion</td><td>2.5%</td>
-            <td><span class="status-pill inprogress">In Progress</span></td><td>—</td><td>—</td>
-          </tr>
-        </table>
-      </div>
-    </div>
-
-    <!-- Reports -->
-    <div class="page" id="page-reports">
-      <h1>Project Reports</h1>
-      <div class="page-desc">Monthly Report Card (sorted by month) &amp; Pre-Development Report (bi-weekly)</div>
-      <div class="tab-row">
-        <div class="tab-pill active">Monthly Report Card</div>
-        <div class="tab-pill">Pre-Development Report (Bi-Weekly)</div>
-      </div>
-      <div class="page-header-row" style="margin-bottom:16px;">
-        <div class="page-desc" style="margin:0;">Sorted newest first · upload PDF/PPTX per month · click fields to edit</div>
-        <button class="btn-green">+ Add Month</button>
-      </div>
-      <div class="report-row">
-        <div class="left">📅 June 2026</div>
-        <div class="actions">
-          <button class="btn-outline">⬆ Upload</button>
-          <button class="btn-download">⬇ Download</button>
-          <button class="btn-outline">▾</button>
-          <button class="btn-outline" style="color:#f87171;">🗑</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Project Folders -->
-    <div class="page" id="page-folders">
-      <h1>Project Folders</h1>
-      <div class="page-desc">Documents organised by category per project · Separate IPC tracking for Contractor &amp; Consultant</div>
-
-      <div class="folder-card">
-        <div class="folder-head">
-          <div class="left">
-            📁
-            <div>
-              <h4>Bangsar 61</h4>
-              <div class="sub">Mixed-Commercial Development · GDV: RM 4,858.5 mn · 0 docs · 0 IPC entries</div>
-            </div>
-          </div>
-          <div>▾</div>
-        </div>
-        <div class="folder-body">
-          <div class="folder-tabs">
-            <div class="folder-tab active">Documents</div>
-            <div class="folder-tab">IPC Tracking</div>
-          </div>
-          <div class="doc-row"><div class="left">🗎 Correspondence In</div><div class="right">0 files <button class="upload-btn">⬆ Upload</button> ▾</div></div>
-          <div class="doc-row"><div class="left">🗎 Correspondence Out</div><div class="right">0 files <button class="upload-btn">⬆ Upload</button> ▾</div></div>
-        </div><!-- /folder-body -->
-      </div><!-- /folder-card -->
-    </div><!-- /page-folders -->
-
-  </div><!-- /main -->
-</div><!-- /app -->
+  </form>
+</div>
+<div id="toast" class="toast"></div>
 
 <script>
-  const USERS = {
-    "pdd.admin":   { password: "PDD@2026",    name: "PDD Admin",      role: "Admin" },
-    "pdd.manager": { password: "PHB@2026",    name: "PDD Manager",    role: "Manager" },
-    "pdd.user1":   { password: "PDD1@2026",   name: "PDD Member",     role: "Member" },
-    "phb.mgmt":    { password: "PHBTop@2026", name: "PHB Management", role: "Top Mgmt" }
+/* =====================================================================
+   PDD Portal — Microsoft Entra ID sign-in + department shared OneDrive folder
+   ---------------------------------------------------------------------
+   • Sign-in: Microsoft Entra ID (OAuth 2.0 authorization code + PKCE)
+   • Files:   one OneDrive folder owned by the department, shared with the team
+   • Data:    projects / KPI / IPC / notes in one JSON file in that folder
+   Fill in CONFIG below — see README.md, section 3.
+   ===================================================================== */
+const CONFIG = {
+  tenantId:   'cc9afa77-5900-4c38-8262-c226c4c2e27d',               // Entra → App registration → Directory (tenant) ID
+  clientId:   'f34b14d9-b66a-4532-91aa-cc9ab55e9c0c',               // Entra → App registration → Application (client) ID
+  // Share link of the department's PDD folder in OneDrive (OneDrive → folder → Share → Copy link)
+  sharedFolderUrl: 'https://phbcommy-my.sharepoint.com/:f:/r/personal/athira_phb_com_my/Documents/Testing?d=wae1543e10a714c22a409b2323725eead&csf=1&web=1&e=QtPdRC'
+};
+Object.assign(CONFIG, window.PDD_CONFIG || {});
+
+// Entra "App roles" (value → role in the portal). Assign them in Entra → Enterprise applications.
+const ROLE_MAP = {'PDD.Admin':'Admin','PDD.Manager':'Manager','PDD.Member':'Member','PDD.TopMgmt':'Top Mgmt'};
+const ROLE_ORDER = ['Admin','Manager','Member','Top Mgmt'];
+const PERMS = {
+  'Admin':    ['edit','upload','manage','admin'],
+  'Manager':  ['edit','upload','manage'],
+  'Member':   ['edit','upload'],
+  'Top Mgmt': []
+};
+const FOLDER_CATS    = ['Correspondence In','Correspondence Out','Approvals & Permits','Contracts & Agreements','Drawings','Minutes of Meeting','Reports','Others'];
+const PROJECT_STATUS = ['Not Started','In Progress','At Risk','On Hold','Completed'];
+const KPI_STATUS     = ['Not Started','In Progress','At Risk','Completed'];
+const IPC_STATUS     = ['Submitted','Under Review','Certified','Paid','Rejected'];
+const COLORS = {blue:'#3b82f6',amber:'#d99a1b',green:'#10b981',grey:'#9ca3a1'};
+const SMALL_UPLOAD = 4 * 1024 * 1024;     // bigger files use a chunked upload session
+
+/* ---------- folder layout inside the shared OneDrive folder ---------- */
+const F = {
+  root:     () => ROOT_NAME,
+  system:   () => `${ROOT_NAME}/_system`,
+  data:     () => `${ROOT_NAME}/_system/portal-data.json`,
+  general:  () => `${ROOT_NAME}/General`,
+  kpi:      () => `${ROOT_NAME}/KPI`,
+  reports:  kind => `${ROOT_NAME}/Reports/${kind === 'monthly' ? 'Monthly Report Card' : 'Pre-Development Report'}`,
+  projects: () => `${ROOT_NAME}/Projects`,
+  project:  p => `${ROOT_NAME}/Projects/${p.folder}`
+};
+const BASE_FOLDERS = () => [F.general(), F.kpi(), F.reports('monthly'), F.reports('predev'), F.projects()];
+
+/* ---------- seed data (created once, by the first Admin/Manager to sign in) ---------- */
+function seed(){
+  const p = (id,name,type,gdv,status,note,target) => ({id,name,folder:safeName(name),type,gdv,status,progress:0,note,target,notes:[]});
+  return {
+    version:2,
+    settings:{ fy:'2026', alertEmail:'' },
+    projects:[
+      p('p1','Bangsar 61','Mixed-Commercial Development','RM 4,858.5 mn','In Progress','CPC issued 29 Dec 2025. Partial CCC pending DBKL road widening approval.','BOD Approval – June 2026'),
+      p('p2','Gleneagles KL – Block C','Hospital Development','RM 317.6 mn','At Risk','TSGPQ suspension ongoing. UMC & IHH engagement in progress.','Way Forward Finalization – June 2026'),
+      p('p3','Plaza Conlay','Mixed-Use Development','RM 3.17 bn','In Progress','PC issued Feb 2026. CMGD for open carpark targeted July 2026.','CMGD – July 2026'),
+      p('p4','KPJ 2','Hospital Block','TBA','In Progress','KPJ submitted 2nd LOI on 15 Apr 2026. BOD approval from KPJ expected Aug 2026.','HOT Execution – Aug 2026')
+    ],
+    kpiSections:[
+      {id:'s1',name:'Innovation/Knowledge/CSR',weight:10,items:[
+        {id:'k1',kpi:'CSR',base:'80% staff participation',stretch:'90% staff participation',weight:2.5,status:'Completed',actual:'',remarks:''},
+        {id:'k2',kpi:'High Impact Training',base:'All staff – min 16 training hours',stretch:'Base + 2 staff complete prof. certificate',weight:2.5,status:'In Progress',actual:'',remarks:''},
+        {id:'k3',kpi:'Re-work Initiative',base:'2 ideas approved',stretch:'Base + 2 fully implemented',weight:5,status:'In Progress',actual:'',remarks:''}
+      ]},
+      {id:'s2',name:'Governance',weight:10,items:[
+        {id:'k4',kpi:'Audit findings closure for the Department/Unit (pro-rated agreed timeline)',base:'80% completion',stretch:'90% completion',weight:2.5,status:'In Progress',actual:'',remarks:''},
+        {id:'k5',kpi:'Risk closure progress post-BARIC (pro-rated agreed timeline)',base:'80% completion',stretch:'90% completion',weight:2.5,status:'In Progress',actual:'',remarks:''}
+      ]}
+    ],
+    ipc:[], log:[]
   };
+}
 
-  function login() {
-    const u = document.getElementById("username").value.trim().toLowerCase();
-    const p = document.getElementById("password").value;
-    const user = USERS[u];
-    if (!user || user.password !== p) {
-      alert("Invalid username or password.");
-      return;
+/* ---------- helpers ---------- */
+const $   = s => document.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = v => { const n = parseFloat(String(v).replace(/,/g,'')); return isNaN(n) ? 0 : n; };
+const clampPct = v => Math.min(100, Math.max(0, num(v)));
+const fmtDate = iso => iso ? new Date(iso).toLocaleDateString('en-MY',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+const fmtDT   = iso => new Date(iso).toLocaleString('en-MY',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+const fmtSize = n => n == null ? '' : n < 1024 ? n+' B' : n < 1048576 ? (n/1024).toFixed(1)+' KB' : (n/1048576).toFixed(1)+' MB';
+const fmtRM   = n => 'RM ' + Number(n||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
+const statusCls = s => ({'In Progress':'blue','At Risk':'amber','Completed':'green'}[s] || 'grey');
+const pillCls   = s => ({'Completed':'completed','In Progress':'inprogress','At Risk':'atrisk'}[s] || 'notstarted');
+const safeName  = s => String(s).replace(/["*:<>?/\\|]/g,'-').replace(/\s+/g,' ').trim().replace(/^\.+|\.+$/g,'') || 'Untitled';
+const parentOf  = p => p.split('/').slice(0,-1).join('/');
+const relPath   = p => p.slice(F.root().length).replace(/^\//,'');
+const fileIcon = n => { const e=(n.split('.').pop()||'').toLowerCase();
+  return e==='pdf'?'📕':['xls','xlsx','csv'].includes(e)?'📗':['doc','docx'].includes(e)?'📘':['ppt','pptx'].includes(e)?'📙':['png','jpg','jpeg','gif','webp'].includes(e)?'🖼':'🗎'; };
+function toast(msg, type, ms){
+  const t = $('#toast'); t.textContent = msg; t.className = 'toast show ' + (type||'');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.className = 'toast', ms || 3500);
+}
+
+/* =====================================================================
+   1. MICROSOFT ENTRA SIGN-IN  (authorization code flow with PKCE)
+   ===================================================================== */
+const AUTH_KEY  = 'pddPortal.auth', PKCE_KEY = 'pddPortal.pkce';
+const SCOPES    = 'openid profile offline_access User.Read Files.ReadWrite.All';
+const AUTHORITY = () => `https://login.microsoftonline.com/${CONFIG.tenantId}/oauth2/v2.0`;
+const REDIRECT  = location.origin + location.pathname.replace(/index\.html$/,'');
+const b64url = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const randStr = n => b64url(crypto.getRandomValues(new Uint8Array(n)));
+function parseJwt(t){
+  const b = t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+  const bin = atob(b + '==='.slice((b.length + 3) % 4));
+  return JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))));
+}
+const Auth = {
+  get(){ try { return JSON.parse(sessionStorage.getItem(AUTH_KEY)); } catch(e){ return null; } },
+  async signIn(){
+    const verifier = randStr(48), state = randStr(16), nonce = randStr(16);
+    const challenge = b64url(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
+    sessionStorage.setItem(PKCE_KEY, JSON.stringify({verifier, state, nonce, page:UI.page}));
+    const q = new URLSearchParams({client_id:CONFIG.clientId, response_type:'code', redirect_uri:REDIRECT, response_mode:'query',
+      scope:SCOPES, state, nonce, code_challenge:challenge, code_challenge_method:'S256'});
+    location.href = `${AUTHORITY()}/authorize?${q}`;
+  },
+  async handleRedirect(){
+    const p = new URLSearchParams(location.search);
+    if (!p.get('code') && !p.get('error')) return;
+    history.replaceState(null, '', REDIRECT);
+    if (p.get('error')) throw new Error(p.get('error_description') || p.get('error'));
+    const saved = JSON.parse(sessionStorage.getItem(PKCE_KEY) || 'null');
+    sessionStorage.removeItem(PKCE_KEY);
+    if (!saved || saved.state !== p.get('state')) throw new Error('Sign-in could not be verified. Please try again.');
+    if (saved.page) UI.page = saved.page;
+    await this.token({grant_type:'authorization_code', code:p.get('code'), code_verifier:saved.verifier, redirect_uri:REDIRECT}, saved.nonce);
+  },
+  async token(params, nonce){
+    const r = await fetch(`${AUTHORITY()}/token`, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:new URLSearchParams({client_id:CONFIG.clientId, scope:SCOPES, ...params})});
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error_description || j.error || 'Sign-in failed');
+    const prev = this.get() || {};
+    const claims = j.id_token ? parseJwt(j.id_token) : prev.claims;
+    if (nonce && claims.nonce !== nonce) throw new Error('Sign-in could not be verified (nonce). Please try again.');
+    const t = {access:j.access_token, refresh:j.refresh_token || prev.refresh, exp:Date.now() + (j.expires_in - 120) * 1000, claims};
+    sessionStorage.setItem(AUTH_KEY, JSON.stringify(t));
+    return t;
+  },
+  async accessToken(){
+    let t = this.get();
+    if (t && Date.now() < t.exp) return t.access;
+    if (t && t.refresh) {
+      if (!this._refreshing) this._refreshing = this.token({grant_type:'refresh_token', refresh_token:t.refresh}).finally(() => this._refreshing = null);
+      try { return (await this._refreshing).access; } catch(e) { /* fall through to full sign-in */ }
     }
-    document.querySelector(".user-row b").textContent = user.name;
-    document.querySelector(".user-row span").textContent = user.role;
-    document.querySelector(".avatar").textContent = user.name.charAt(0);
-    document.getElementById("login-screen").style.display = "none";
-    document.getElementById("app").style.display = "block";
-    showPage("dashboard");
+    sessionStorage.removeItem(AUTH_KEY); this.signIn();
+    throw new Error('Your session expired. Signing you in again…');
+  },
+  signOut(){
+    sessionStorage.removeItem(AUTH_KEY);
+    location.href = `${AUTHORITY()}/logout?post_logout_redirect_uri=${encodeURIComponent(REDIRECT)}`;
   }
+};
 
-  function logout() {
-    document.getElementById("app").style.display = "none";
-    document.getElementById("login-screen").style.display = "flex";
-    document.getElementById("password").value = "";
+/* =====================================================================
+   2. MICROSOFT GRAPH / SHAREPOINT
+   ===================================================================== */
+const GRAPH = 'https://graph.microsoft.com/v1.0';
+let DRIVE = null, ROOT_ID = null, ROOT_NAME = 'PDD Portal';
+async function graph(path, {method='GET', body, headers={}, raw=false} = {}){
+  const r = await fetch(path.startsWith('http') ? path : GRAPH + path,
+    {method, body, headers:{Authorization:'Bearer ' + await Auth.accessToken(), ...headers}});
+  if (!r.ok) {
+    let msg = `${r.status} ${r.statusText}`;
+    try { const j = await r.json(); if (j.error) msg = j.error.message || j.error.code || msg; } catch(e){}
+    if (r.status === 401) { sessionStorage.removeItem(AUTH_KEY); }
+    if (r.status === 403) msg = 'You do not have permission on the department OneDrive folder for this action. (' + msg + ')';
+    const e = new Error(msg); e.status = r.status; throw e;
   }
+  if (raw) return r;
+  return r.status === 204 ? null : r.json();
+}
+const encPath = p => p.split('/').filter(Boolean).map(encodeURIComponent).join('/');
+const jsonHdr = {'Content-Type':'application/json'};
 
-  function showPage(name) {
-    document.querySelectorAll(".nav-link").forEach(a =>
-      a.classList.toggle("active", a.dataset.page === name));
-    document.querySelectorAll(".page").forEach(pg =>
-      pg.classList.toggle("active", pg.id === "page-" + name));
+async function initDrive(){
+  // Resolve the share link → the folder's drive + item id (works for any staff the folder is shared with)
+  const shareId = 'u!' + btoa(unescape(encodeURIComponent(CONFIG.sharedFolderUrl.trim()))).replace(/=+$/,'').replace(/\//g,'_').replace(/\+/g,'-');
+  let root;
+  try { root = await graph(`/shares/${shareId}/driveItem`); }
+  catch(e) {
+    if (e.status === 403 || e.status === 404) throw new Error('The department OneDrive folder has not been shared with your account (or the link in CONFIG is wrong). Ask the PDD Admin to share the folder with you.');
+    throw e;
   }
+  if (!root.folder) throw new Error('The share link in CONFIG points to a file, not a folder.');
+  DRIVE = root.parentReference.driveId; ROOT_ID = root.id; ROOT_NAME = root.name;
+}
+/* paths are written "<shared folder name>/sub/folder"; translate them to Graph URLs relative to the shared folder */
+const relOf = p => p === ROOT_NAME ? '' : p.slice(ROOT_NAME.length + 1);
+const itemUrl = p => { const r = relOf(p); return r ? `/drives/${DRIVE}/items/${ROOT_ID}:/${encPath(r)}` : `/drives/${DRIVE}/items/${ROOT_ID}`; };
+const contentUrl = p => `/drives/${DRIVE}/items/${ROOT_ID}:/${encPath(relOf(p))}:/content`;
+const itemByPath = p => graph(itemUrl(p));
+const FID = {};   // folder path → driveItem (cache)
+async function ensureFolder(path){
+  if (FID[path]) return FID[path];
+  if (path === ROOT_NAME) return FID[path] = await graph(itemUrl(path));
+  try { return FID[path] = await itemByPath(path); } catch(e){ if (e.status !== 404) throw e; }
+  const parts = path.split('/'), name = parts.pop();
+  const parent = await ensureFolder(parts.join('/'));
+  try {
+    return FID[path] = await graph(`/drives/${DRIVE}/items/${parent.id}/children`, {method:'POST', headers:jsonHdr,
+      body:JSON.stringify({name, folder:{}, '@microsoft.graph.conflictBehavior':'fail'})});
+  } catch(e) { if (e.status === 409) return FID[path] = await itemByPath(path); throw e; }
+}
+async function listChildren(id){
+  let url = `/drives/${DRIVE}/items/${id}/children?$top=999`, out = [];
+  while (url) { const j = await graph(url); out.push(...j.value); url = j['@odata.nextLink']; }
+  return out;
+}
+async function uploadFile(folderPath, file, onProgress){
+  const folder = await ensureFolder(folderPath), name = encodeURIComponent(file.name);
+  if (file.size <= SMALL_UPLOAD)
+    return graph(`/drives/${DRIVE}/items/${folder.id}:/${name}:/content?@microsoft.graph.conflictBehavior=rename`,
+      {method:'PUT', body:file, headers:{'Content-Type':file.type || 'application/octet-stream'}});
+  const s = await graph(`/drives/${DRIVE}/items/${folder.id}:/${name}:/createUploadSession`, {method:'POST', headers:jsonHdr,
+    body:JSON.stringify({item:{'@microsoft.graph.conflictBehavior':'rename'}})});
+  const CHUNK = 320 * 1024 * 16;   // 5 MB, must be a multiple of 320 KB
+  let result = null;
+  for (let start = 0; start < file.size; start += CHUNK) {
+    const end = Math.min(start + CHUNK, file.size);
+    const r = await fetch(s.uploadUrl, {method:'PUT', headers:{'Content-Range':`bytes ${start}-${end-1}/${file.size}`}, body:file.slice(start, end)});
+    if (!r.ok) throw new Error(`Upload of ${file.name} failed (${r.status})`);
+    if (r.status === 200 || r.status === 201) result = await r.json();
+    if (onProgress) onProgress(end / file.size);
+  }
+  return result;
+}
+async function downloadItem(id){
+  const it = await graph(`/drives/${DRIVE}/items/${id}`);
+  const url = it['@microsoft.graph.downloadUrl'];
+  if (!url) throw new Error('This item cannot be downloaded.');
+  const a = document.createElement('a'); a.href = url; a.download = it.name; document.body.appendChild(a); a.click(); a.remove();
+}
 
-  document.querySelectorAll(".nav-link").forEach(a =>
-    a.addEventListener("click", () => showPage(a.dataset.page)));
+/* ---------- live folder cache (what you see is what is in OneDrive) ---------- */
+const FC = {};   // path → {item, items, loading, error, at}
+function folderState(path){
+  let c = FC[path];
+  if (!c) { c = FC[path] = {loading:false, at:0}; fetchFolder(path); }
+  else if (!c.loading && Date.now() - c.at > 60000) fetchFolder(path);   // refresh in background
+  return c;
+}
+async function fetchFolder(path){
+  const c = FC[path]; if (!c || c.loading) return;
+  c.loading = true;
+  try {
+    let item = null, items = [];
+    try { item = await itemByPath(path); items = await listChildren(item.id); }
+    catch(e) { if (e.status !== 404) throw e; }
+    Object.assign(c, {item, items:items.filter(x => x.name !== '_system'), error:null});
+  } catch(e) { c.error = e.message; }
+  c.loading = false; c.at = Date.now();
+  if (FC[path] === c) render();
+}
+function invalidate(...paths){
+  for (const p of paths) for (const k of Object.keys(FC)) if (k === p || k.startsWith(p + '/')) delete FC[k];
+}
+function forgetFolderIds(){ for (const k of Object.keys(FID)) delete FID[k]; }
 
-  // Press Enter in either field to sign in
-  ["username", "password"].forEach(id =>
-    document.getElementById(id).addEventListener("keydown", e => {
-      if (e.key === "Enter") login();
-    }));
+/* ---------- portal data (projects, KPI, IPC, notes) = one JSON file in _system ---------- */
+let S = null, DATA_ID = null, DATA_ETAG = null;
+async function loadData(){
+  let it;
+  try { it = await itemByPath(F.data()); }
+  catch(e) {
+    if (e.status !== 404) throw e;
+    if (!can('manage')) throw new Error('The portal has not been set up yet. Ask a PDD Admin or Manager to sign in first.');
+    await ensureFolder(F.system());
+    S = seed();
+    it = await graph(`${contentUrl(F.data())}?@microsoft.graph.conflictBehavior=fail`,
+      {method:'PUT', headers:jsonHdr, body:JSON.stringify(S)});
+    DATA_ID = it.id; DATA_ETAG = it.eTag;
+    await setupFolders();
+    return;
+  }
+  const r = it['@microsoft.graph.downloadUrl'] ? await fetch(it['@microsoft.graph.downloadUrl'], {cache:'no-store'})
+                                               : await graph(`/drives/${DRIVE}/items/${it.id}/content`, {raw:true});
+  S = await r.json(); DATA_ID = it.id; DATA_ETAG = it.eTag;
+  S.ipc = S.ipc || []; S.log = S.log || []; S.settings = S.settings || {fy:'2026', alertEmail:''};
+}
+/* Every change goes through save(): it re-applies your change on the latest copy if someone else saved in between. */
+async function save(action, mutate){
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const draft = structuredClone(S);
+    if (mutate && mutate(draft) === false) return false;
+    if (action) { draft.log.unshift({at:new Date().toISOString(), by:ME.name, action}); draft.log = draft.log.slice(0, 1000); }
+    try {
+      const it = await graph(`/drives/${DRIVE}/items/${DATA_ID}/content`, {method:'PUT', body:JSON.stringify(draft),
+        headers:{...jsonHdr, 'If-Match':DATA_ETAG}});
+      DATA_ETAG = it.eTag; S = draft; render(); return true;
+    } catch(e) {
+      if (e.status === 412 && attempt < 3) { await loadData(); continue; }   // someone else saved first → retry on fresh data
+      toast('Could not save: ' + e.message, 'err', 6000); return false;
+    }
+  }
+}
+async function checkRemote(){
+  if (!ME || !DATA_ID || document.hidden || !$('#modal').classList.contains('hidden')) return;
+  try {
+    const it = await graph(`/drives/${DRIVE}/items/${DATA_ID}?$select=id,eTag`);
+    if (it.eTag !== DATA_ETAG) { await loadData(); render(); toast('Updated with the latest changes from the team.'); }
+    else render();   // lets open folders refresh themselves
+  } catch(e) {}
+}
+async function setupFolders(){
+  for (const p of BASE_FOLDERS()) await ensureFolder(p);
+  for (const p of S.projects) await ensureProjectFolders(p.folder);
+}
+async function ensureProjectFolders(folder){
+  const base = `${F.projects()}/${folder}`;
+  await ensureFolder(base);
+  await Promise.all(FOLDER_CATS.map(c => ensureFolder(`${base}/${c}`)));
+  invalidate(base);
+}
+
+/* =====================================================================
+   3. APP STATE, ROLES, NAVIGATION
+   ===================================================================== */
+let ME = null;
+const UI = { page:'dashboard', browsePath:null, search:null, searchQ:'', reportTab:'monthly', open:{}, folderTab:{} };
+const can = p => !!ME && (PERMS[ME.role] || []).includes(p);
+const proj = id => S.projects.find(p => p.id === id);
+const projName = id => (proj(id) || {}).name || '';
+function guard(p){ if (!can(p)) { toast('You do not have permission for this action.', 'err'); return false; } return true; }
+
+function showLogin(msgHtml, signedIn, kind){
+  $('#app').style.display = 'none'; $('#login-screen').style.display = 'flex';
+  const m = $('#login-msg');
+  if (msgHtml) { m.innerHTML = msgHtml; m.className = kind === 'info' ? 'info-msg' : 'error-msg'; } else m.className = 'hidden';
+  $('#btn-signin').classList.toggle('hidden', !!signedIn);
+  $('#btn-signout-login').classList.toggle('hidden', !signedIn);
+}
+async function start(){
+  if (String(CONFIG.clientId).startsWith('YOUR-') || CONFIG.sharedFolderUrl.includes('XXXXXXXX')) {
+    showLogin('<b>Setup needed.</b> Open <code>index.html</code> and fill in the <code>CONFIG</code> section (tenant ID, client ID and the OneDrive folder link). See README, section 3.');
+    $('#btn-signin').disabled = true; return;
+  }
+  try { await Auth.handleRedirect(); } catch(e) { showLogin(esc(e.message)); return; }
+  if (!Auth.get()) { showLogin(); return; }
+  const c = Auth.get().claims || {};
+  const roles = (c.roles || []).map(r => ROLE_MAP[r]).filter(Boolean);
+  ME = {name:c.name || c.preferred_username || 'User', email:c.preferred_username || c.email || '', role:ROLE_ORDER.find(r => roles.includes(r))};
+  if (!ME.role) {
+    showLogin(`You are signed in as <b>${esc(ME.email)}</b>, but you do not have access to the PDD Portal yet.<br>Ask IT or the PDD Admin to assign you a PDD Portal role.`, true);
+    ME = null; return;
+  }
+  showLogin('Connecting to the department OneDrive folder…', true, 'info');
+  try { await initDrive(); await loadData(); }
+  catch(e) { showLogin('Could not open the department OneDrive folder.<br>' + esc(e.message), true); return; }
+  enterApp();
+}
+function enterApp(){
+  $('#me-name').textContent = ME.name; $('#me-role').textContent = `${ME.role} · ${ME.email}`;
+  $('#me-avatar').textContent = ME.name.charAt(0).toUpperCase();
+  $('#login-screen').style.display = 'none'; $('#app').style.display = 'block';
+  showPage(UI.page);
+  setInterval(checkRemote, 60000);
+  window.addEventListener('focus', checkRemote);
+}
+$('#btn-signin').addEventListener('click', () => Auth.signIn());
+$('#btn-signout-login').addEventListener('click', () => Auth.signOut());
+
+const PAGES = {};
+function showPage(name){
+  if (name === 'admin' && !can('admin')) name = 'dashboard';
+  UI.page = name;
+  document.querySelectorAll('.nav-link').forEach(a => a.classList.toggle('active', a.dataset.page === name));
+  document.querySelectorAll('.page').forEach(pg => pg.classList.toggle('active', pg.id === 'page-' + name));
+  render(); window.scrollTo(0,0);
+}
+function render(){
+  if (!ME || !S) return;
+  $('#nav-admin').style.display = can('admin') ? '' : 'none';
+  const a = document.activeElement, id = a && a.id, pos = a && a.selectionStart;
+  PAGES[UI.page]();
+  if (id) { const el = document.getElementById(id); if (el && el !== a) { el.focus(); try { el.setSelectionRange(pos, pos); } catch(e){} } }
+}
+
+/* ---------- modal form ---------- */
+let modalSubmit = null;
+function fieldHtml(f){
+  const v = f.value ?? '', req = f.required ? 'required' : '';
+  const lab = f.label ? `<label>${esc(f.label)}${f.required?' *':''}</label>` : '';
+  let input;
+  if (f.type === 'textarea') input = `<textarea name="${f.key}" rows="${f.rows||4}" ${req}>${esc(v)}</textarea>`;
+  else if (f.type === 'select') input = `<select name="${f.key}">${f.options.map(o => { const [val,txt] = Array.isArray(o) ? o : [o,o];
+      return `<option value="${esc(val)}" ${String(val)===String(v)?'selected':''}>${esc(txt)}</option>`; }).join('')}</select>`;
+  else input = `<input type="${f.type||'text'}" name="${f.key}" value="${esc(v)}" ${f.min!=null?`min="${f.min}"`:''} ${f.max!=null?`max="${f.max}"`:''} ${f.step?`step="${f.step}"`:''} ${req}>`;
+  return `<div class="field">${lab}${input}${f.hint?`<div class="hint">${esc(f.hint)}</div>`:''}</div>`;
+}
+function openForm({title, fields, submitLabel='Save', onSubmit, extraHtml=''}){
+  $('#modal-title').textContent = title;
+  $('#modal-body').innerHTML = fields.map(fieldHtml).join('');
+  $('#modal-extra').innerHTML = extraHtml;
+  $('#modal-error').classList.add('hidden');
+  $('#modal-submit').textContent = submitLabel; $('#modal-submit').disabled = false;
+  modalSubmit = async () => {
+    const form = $('#modal-form'), vals = {};
+    for (const f of fields) {
+      vals[f.key] = form.elements[f.key].value.trim();
+      if (f.required && !vals[f.key]) return formError(`"${f.label}" is required.`);
+    }
+    $('#modal-submit').disabled = true; $('#modal-submit').textContent = 'Saving…';
+    try { const r = await onSubmit(vals); if (r !== false) closeModal(); }
+    catch(e) { formError(e.message); }
+    finally { $('#modal-submit').disabled = false; $('#modal-submit').textContent = submitLabel; }
+  };
+  $('#modal').classList.remove('hidden');
+  const first = $('#modal-body input, #modal-body textarea, #modal-body select'); if (first) first.focus();
+}
+function formError(msg){ const e = $('#modal-error'); e.textContent = msg; e.classList.remove('hidden'); return false; }
+function closeModal(){ $('#modal').classList.add('hidden'); modalSubmit = null; }
+$('#modal-form').addEventListener('submit', e => { e.preventDefault(); if (modalSubmit) modalSubmit(); });
+$('#modal').addEventListener('mousedown', e => { if (e.target.id === 'modal') closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* =====================================================================
+   4. FILE LISTS (shared by Documents, Reports, Project Folders)
+   ===================================================================== */
+function itemActions(it, folderPath, {protect=false} = {}){
+  const isFolder = !!it.folder;
+  return `<a class="btn-sm" href="${esc(it.webUrl)}" target="_blank" rel="noopener">${isFolder ? 'Open in OneDrive' : 'Open'}</a>`
+    + (isFolder ? '' : `<button type="button" class="btn-sm green" data-act="dl" data-id="${it.id}">Download</button>`)
+    + (can('edit') && !protect ? `<button type="button" class="btn-sm" data-act="rename" data-id="${it.id}" data-name="${esc(it.name)}" data-path="${esc(folderPath)}">Rename</button>` : '')
+    + (can('manage') && !protect ? `<button type="button" class="btn-sm red" data-act="del-item" data-id="${it.id}" data-name="${esc(it.name)}" data-path="${esc(folderPath)}" data-folder="${isFolder?1:''}">Delete</button>` : '');
+}
+function fileMeta(it){
+  const who = (it.lastModifiedBy && it.lastModifiedBy.user && it.lastModifiedBy.user.displayName) || '';
+  return it.folder ? `${it.folder.childCount} item(s)` : `${fmtSize(it.size)}${who ? ' · ' + esc(who) : ''} · ${fmtDate(it.lastModifiedDateTime)}`;
+}
+function sortItems(items){
+  return items.slice().sort((a,b) => (!!b.folder - !!a.folder) || a.name.localeCompare(b.name, undefined, {numeric:true}));
+}
+/* list of what is inside a OneDrive folder */
+function folderView(path, {browse=false, filesOnly=false, protect=false, empty='No files yet.'} = {}){
+  const st = folderState(path);
+  if (st.error) return `<div class="error-msg">${esc(st.error)} <button class="btn-sm" data-act="refresh" data-path="${esc(path)}">Retry</button></div>`;
+  if (!st.items) return '<div class="muted small pad">Loading…</div>';
+  const items = sortItems(filesOnly ? st.items.filter(i => i.file) : st.items);
+  if (!items.length) return `<div class="muted small pad">${empty}</div>`;
+  return items.map(it => {
+    const sub = path + '/' + it.name, nav = browse && it.folder;
+    return `<div class="file-row ${nav?'row-folder':''}" ${nav?`data-act="browse" data-path="${esc(sub)}"`:''}>
+      <div>${it.folder ? '📁' : fileIcon(it.name)} <b>${esc(it.name)}</b><div class="muted small">${fileMeta(it)}</div></div>
+      <div class="actions" data-stop="1">${itemActions(it, path, {protect: protect && it.folder})}</div></div>`;
+  }).join('');
+}
+function pickFiles(cb, accept){
+  const i = document.createElement('input'); i.type = 'file'; i.multiple = true; if (accept) i.accept = accept;
+  i.onchange = () => { if (i.files.length) cb([...i.files]); };
+  i.click();
+}
+async function uploadTo(path, files){
+  if (!guard('upload')) return;
+  let done = 0;
+  try {
+    for (const f of files) {
+      toast(`Uploading ${done+1}/${files.length}: ${f.name}…`, '', 600000);
+      await uploadFile(path, f, p => toast(`Uploading ${done+1}/${files.length}: ${f.name} (${Math.round(p*100)}%)`, '', 600000));
+      done++;
+    }
+    toast(`${done} file(s) uploaded to OneDrive.`, 'ok');
+  } catch(e) { toast(e.message, 'err', 8000); }
+  invalidate(path, parentOf(path));
+  UI.open[path] = true; render();
+  if (done) save(`Uploaded ${done} file(s) to ${relPath(path)}: ${files.slice(0,done).map(f => f.name).join(', ')}`);
+}
+function renameItem(d){
+  if (!guard('edit')) return;
+  openForm({title:'Rename', fields:[{key:'name', label:'New name', value:d.name, required:true}], submitLabel:'Rename',
+    onSubmit: async v => {
+      const name = safeName(v.name); if (name === d.name) return;
+      await graph(`/drives/${DRIVE}/items/${d.id}`, {method:'PATCH', headers:jsonHdr, body:JSON.stringify({name})});
+      forgetFolderIds(); invalidate(d.path); render();
+      save(`Renamed ${relPath(d.path + '/' + d.name)} → ${name}`);
+    }});
+}
+async function deleteItem(d){
+  if (!guard('manage')) return;
+  if (!confirm(`Delete ${d.folder ? 'folder' : 'file'} "${d.name}"${d.folder ? ' and everything in it' : ''}?\n\nIt goes to the OneDrive recycle bin and can be restored from there.`)) return;
+  await graph(`/drives/${DRIVE}/items/${d.id}`, {method:'DELETE'});
+  forgetFolderIds(); invalidate(d.path, parentOf(d.path)); render();
+  toast('Moved to the OneDrive recycle bin.');
+  save(`Deleted ${relPath(d.path + '/' + d.name)}`);
+}
+
+/* =====================================================================
+   5. PAGES
+   ===================================================================== */
+const stat = (l,v,c) => `<div class="stat-card"><div class="label">${l}</div><div class="value ${c}">${v}</div></div>`;
+
+/* ---------- DASHBOARD ---------- */
+PAGES.dashboard = function(){
+  const P = S.projects, c = s => P.filter(p => p.status === s).length;
+  const kpis = S.kpiSections.flatMap(s => s.items);
+  const card = p => {
+    const cls = statusCls(p.status), notes = (p.notes||[]).slice(-2).reverse();
+    return `<div class="proj-card">
+      <div class="proj-head"><div><h4>${esc(p.name)}</h4><div class="type">${esc(p.type)}</div></div><span class="badge ${cls}">${esc(p.status)}</span></div>
+      <div class="proj-gdv">GDV: <b>${esc(p.gdv||'TBA')}</b> · Progress: <b>${+p.progress||0}%</b></div>
+      <div class="proj-note">${esc(p.note)}</div>
+      <div class="target-box">Target<b>${esc(p.target||'—')}</b></div>
+      ${notes.length ? `<div class="notes"><div class="section-label" style="margin-bottom:6px">Latest team notes</div>${notes.map(n =>
+        `<div class="note"><div class="muted small">${esc(n.by)} · ${fmtDT(n.at)}</div>${esc(n.text)}</div>`).join('')}</div>` : ''}
+      <div class="btn-row">
+        ${can('edit') ? `<button class="link-btn" data-act="add-note" data-id="${p.id}">Add Team Note / Status</button><button class="link-btn" data-act="edit-project" data-id="${p.id}">Edit</button>`
+                      : (p.notes||[]).length ? `<button class="link-btn" data-act="add-note" data-id="${p.id}">View Notes</button>` : ''}
+        <button class="link-btn" data-act="open-folder" data-id="${p.id}">Open Folder</button>
+        ${can('manage') ? `<button class="link-btn red" data-act="del-project" data-id="${p.id}" title="Remove project">🗑</button>` : ''}
+      </div></div>`;
+  };
+  $('#page-dashboard').innerHTML = `
+    <div class="page-header-row"><div><h1>Dashboard</h1><div class="page-desc">FY${esc(S.settings.fy)} — Property Development Department Overview</div></div>
+      ${can('manage') ? '<button class="btn-green" data-act="add-project">+ Add Project</button>' : ''}</div>
+    <div class="stat-grid">${stat('Total Projects',P.length,'')}${stat('In Progress',c('In Progress'),'blue')}${stat('At Risk',c('At Risk'),'amber')}${stat('Completed',c('Completed'),'green')}${stat('KPIs Completed',`${kpis.filter(k=>k.status==='Completed').length}/${kpis.length}`,'')}</div>
+    <div class="section-label">Project Progress Overview</div>
+    <div class="progress-grid">${P.map(p => `<div class="progress-card"><h3>${esc(p.name)}</h3>
+      <div class="donut" style="--p:${clampPct(p.progress)};--c:${COLORS[statusCls(p.status)]}"><span class="${statusCls(p.status)}">${+p.progress||0}%</span></div>
+      <span class="badge ${statusCls(p.status)}">${esc(p.status)}</span></div>`).join('') || '<div class="muted">No projects yet.</div>'}</div>
+    <div class="proj-grid">${P.map(card).join('')}</div>`;
+};
+function projectForm(id){
+  if (!guard(id ? 'edit' : 'manage')) return;
+  const p = id ? proj(id) : {name:'',type:'',gdv:'',status:'In Progress',progress:0,note:'',target:''};
+  openForm({title: id ? 'Edit Project' : 'Add Project',
+    fields:[
+      {key:'name',label:'Project name',value:p.name,required:true},
+      {key:'type',label:'Development type',value:p.type},
+      {key:'gdv',label:'GDV',value:p.gdv,hint:'e.g. RM 317.6 mn'},
+      {key:'status',label:'Status',type:'select',options:PROJECT_STATUS,value:p.status},
+      {key:'progress',label:'Progress (%)',type:'number',min:0,max:100,value:p.progress},
+      {key:'note',label:'Current status summary',type:'textarea',value:p.note},
+      {key:'target',label:'Next target / milestone',value:p.target}
+    ],
+    onSubmit: async v => {
+      v.progress = clampPct(v.progress);
+      const folder = safeName(v.name);
+      if (S.projects.some(x => x.id !== id && x.folder.toLowerCase() === folder.toLowerCase())) return formError('Another project already uses this name.');
+      if (id) {
+        let newFolder = p.folder;
+        if (folder !== p.folder) {   // rename the OneDrive folder too
+          try {
+            const it = await itemByPath(F.project(p));
+            await graph(`/drives/${DRIVE}/items/${it.id}`, {method:'PATCH', headers:jsonHdr, body:JSON.stringify({name:folder})});
+            newFolder = folder;
+          } catch(e) { if (e.status === 404) newFolder = folder; else toast('Project saved, but the folder could not be renamed: ' + e.message, 'err'); }
+          forgetFolderIds(); invalidate(F.projects());
+        }
+        return save(`Edited project: ${v.name}`, D => { const x = D.projects.find(y => y.id === id); if (!x) return false; Object.assign(x, v, {folder:newFolder}); });
+      }
+      const ok = await save(`Added project: ${v.name}`, D => { D.projects.push({id:uid(), notes:[], folder, ...v}); });
+      if (ok) ensureProjectFolders(folder).catch(e => toast('Project added, but its folders could not be created: ' + e.message, 'err'));
+      return ok;
+    }});
+}
+function addNote(id){
+  const p = proj(id), hist = (p.notes||[]).slice().reverse();
+  const extra = hist.length ? `<div class="section-label">Note history (${hist.length})</div><div class="history">${hist.map(n =>
+    `<div class="note"><div class="muted small">${esc(n.by)} · ${fmtDT(n.at)}</div>${esc(n.text)}</div>`).join('')}</div>` : '';
+  if (!can('edit')) { openForm({title:`Team notes — ${p.name}`, fields:[], extraHtml:extra || '<div class="muted">No notes yet.</div>', submitLabel:'Close', onSubmit:()=>{}}); return; }
+  openForm({title:`Team Note / Status — ${p.name}`, extraHtml:extra, submitLabel:'Add Note',
+    fields:[
+      {key:'text',label:'Note',type:'textarea',required:true},
+      {key:'status',label:'Update status',type:'select',options:PROJECT_STATUS,value:p.status},
+      {key:'progress',label:'Update progress (%)',type:'number',min:0,max:100,value:p.progress}
+    ],
+    onSubmit: v => save(`Added note to ${p.name}`, D => {
+      const x = D.projects.find(y => y.id === id); if (!x) return false;
+      (x.notes = x.notes || []).push({at:new Date().toISOString(), by:ME.name, text:v.text});
+      x.status = v.status; x.progress = clampPct(v.progress);
+    })});
+}
+async function deleteProject(id){
+  if (!guard('manage')) return;
+  const p = proj(id);
+  if (!confirm(`Remove project "${p.name}" from the portal (including its IPC entries)?\n\nIts OneDrive folder "Projects/${p.folder}" is NOT deleted — remove it in OneDrive if needed.`)) return;
+  save(`Removed project: ${p.name}`, D => { D.projects = D.projects.filter(x => x.id !== id); D.ipc = D.ipc.filter(i => i.projectId !== id); });
+}
+
+/* ---------- DOCUMENTS (shared folder browser) ---------- */
+PAGES.documents = function(){
+  const path = UI.browsePath || F.root(), st = folderState(path), atRoot = path === F.root();
+  const segs = relPath(path).split('/').filter(Boolean);
+  const crumbs = [`<a data-act="browse" data-path="${esc(F.root())}">📁 ${esc(F.root())}</a>`,
+    ...segs.map((s,i) => `<span class="sep">›</span><a data-act="browse" data-path="${esc(F.root() + '/' + segs.slice(0,i+1).join('/'))}">${esc(s)}</a>`)].join('');
+  let body;
+  if (UI.search) {
+    body = `<div class="page-header-row" style="margin-bottom:10px"><div class="muted">${UI.search.length} result(s) for "<b>${esc(UI.searchQ)}</b>"</div>
+      <button class="btn-sm" data-act="clear-search">✕ Clear search</button></div>` +
+      (UI.search.map(r => `<div class="file-row"><div>${r.item.folder?'📁':fileIcon(r.item.name)} <b>${esc(r.item.name)}</b>
+        <div class="muted small">${esc(relPath(r.path) || F.root())} · ${fileMeta(r.item)}</div></div>
+        <div class="actions">${itemActions(r.item, r.path)}</div></div>`).join('') || '<div class="muted pad">Nothing found.</div>');
+  } else if (st.items && !st.item && !st.loading) {
+    body = `<div class="empty-state">This folder does not exist yet in OneDrive.${can('admin') ? '<br><br><button class="btn-green" data-act="setup-folders">Create the PDD folders</button>' : ''}</div>`;
+  } else {
+    body = folderView(path, {browse:true, protect:atRoot, empty:'This folder is empty.'});
+  }
+  $('#page-documents').innerHTML = `
+    <div class="page-header-row"><div><h1>Documents</h1><div class="page-desc">The department's shared OneDrive folder — everyone uploads here and sees the same files</div></div>
+      <div class="btn-row">
+        ${can('upload') ? `<button class="btn-green" data-act="upload-to" data-path="${esc(path)}">⬆ Upload here</button><button class="btn-outline" data-act="new-folder" data-path="${esc(path)}">+ New Folder</button>` : ''}
+        ${st.item ? `<a class="btn-outline" style="text-decoration:none" href="${esc(st.item.webUrl)}" target="_blank" rel="noopener">Open in OneDrive ↗</a>` : ''}
+        <button class="btn-outline" data-act="refresh" data-path="${esc(path)}" title="Refresh">⟳</button>
+      </div></div>
+    <form class="btn-row" id="search-form" style="margin-bottom:6px">
+      <input class="search" id="doc-search" style="margin:0" placeholder="Search all PDD files…" value="${esc(UI.searchQ)}">
+      <button class="btn-outline" type="submit">Search</button></form>
+    <div class="crumbs" style="margin-top:14px">${crumbs}</div>
+    <div class="kpi-section" style="padding:4px 20px">${body}</div>`;
+  $('#search-form').addEventListener('submit', e => { e.preventDefault(); searchFiles($('#doc-search').value.trim()); });
+};
+async function searchFiles(q){
+  UI.searchQ = q;
+  if (!q) { UI.search = null; render(); return; }
+  toast('Searching…', '', 60000);
+  const needle = q.toLowerCase(), out = [];
+  try {
+    let level = [{id:ROOT_ID, path:F.root()}], seen = 0;
+    while (level.length && seen < 5000) {
+      const kids = await Promise.all(level.map(f => listChildren(f.id).then(items => items.map(item => ({item, path:f.path})))));
+      level = [];
+      for (const {item, path} of kids.flat()) {
+        seen++;
+        if (item.name === '_system') continue;
+        if (item.name.toLowerCase().includes(needle)) out.push({item, path});
+        if (item.folder) level.push({id:item.id, path:path + '/' + item.name});
+      }
+    }
+  } catch(e) { toast('Search failed: ' + e.message, 'err'); return; }
+  UI.search = out.slice(0, 300); toast(`${out.length} result(s).`, 'ok'); render();
+}
+function newFolder(path){
+  if (!guard('upload')) return;
+  openForm({title:'New Folder', fields:[{key:'name',label:'Folder name',required:true}], submitLabel:'Create',
+    onSubmit: async v => {
+      const name = safeName(v.name);
+      if ((FC[path] && FC[path].items || []).some(i => i.name.toLowerCase() === name.toLowerCase())) return formError('A file or folder with this name already exists here.');
+      await ensureFolder(path + '/' + name); invalidate(path); render();
+      save(`Created folder ${relPath(path + '/' + name)}`);
+    }});
+}
+
+/* ---------- KPI TRACKER ---------- */
+PAGES.kpi = function(){
+  const items = S.kpiSections.flatMap(s => s.items), n = st => items.filter(i => i.status === st).length;
+  const q = Math.floor(new Date().getMonth() / 3) + 1;
+  const wTotal = items.reduce((a,i) => a + num(i.weight), 0), wDone = items.filter(i => i.status === 'Completed').reduce((a,i) => a + num(i.weight), 0);
+  const editCol = can('edit');
+  $('#page-kpi').innerHTML = `
+    <div class="kpi-top">
+      <div><h1>KPI Tracker</h1><div class="page-desc">FY${esc(S.settings.fy)} Property Development Department KPI · Quarterly alerts to PHB management</div></div>
+      <div class="kpi-stats">
+        <div><b class="green">${n('Completed')}</b>Completed</div><div><b class="blue">${n('In Progress')}</b>In Progress</div>
+        <div><b class="amber">${n('At Risk')}</b>At Risk</div><div><b>${items.length}</b>Total</div>
+        <div><b class="green">${+wDone.toFixed(2)}% / ${+wTotal.toFixed(2)}%</b>Weight achieved</div>
+        <button class="btn-outline" data-act="browse" data-path="${esc(F.kpi())}">📁 KPI Evidence</button>
+        ${can('manage') ? `<button class="btn-amber" data-act="kpi-alert">🔔 Send Q${q} Alert</button><button class="btn-green" data-act="add-section">+ Add Section</button>` : ''}
+      </div>
+    </div>
+    ${S.kpiSections.map(s => {
+      const sw = s.items.reduce((a,i) => a + num(i.weight), 0);
+      return `<div class="kpi-section">
+      <div class="kpi-section-head"><span>${esc(s.name)} (${+num(s.weight)}%) <span class="muted small" style="font-weight:400">· items total ${+sw.toFixed(2)}%</span></span>
+        <span class="btn-row">${can('manage') ? `<button class="btn-sm green" data-act="add-kpi" data-id="${s.id}">+ KPI</button><button class="btn-sm" data-act="edit-section" data-id="${s.id}">Edit</button><button class="btn-sm red" data-act="del-section" data-id="${s.id}">Delete</button>` : ''}</span></div>
+      <div class="table-wrap"><table>
+        <tr><th>KPI</th><th>Base Target</th><th>Stretch Target</th><th>Weight</th><th>Status</th><th>Actual</th><th>Remarks</th>${editCol?'<th></th>':''}</tr>
+        ${s.items.map(i => `<tr><td>${esc(i.kpi)}</td><td>${esc(i.base)}</td><td>${esc(i.stretch)}</td><td>${+num(i.weight)}%</td>
+          <td><span class="status-pill ${pillCls(i.status)}">${esc(i.status)}</span></td><td>${esc(i.actual)||'—'}</td><td>${esc(i.remarks)||'—'}</td>
+          ${editCol ? `<td class="actions"><button class="btn-sm" data-act="edit-kpi" data-sid="${s.id}" data-id="${i.id}">Update</button>${can('manage')?`<button class="btn-sm red" data-act="del-kpi" data-sid="${s.id}" data-id="${i.id}">✕</button>`:''}</td>` : ''}</tr>`).join('')
+          || `<tr><td colspan="8" class="muted">No KPIs in this section yet.</td></tr>`}
+      </table></div></div>`; }).join('')}`;
+};
+function sectionForm(id){
+  if (!guard('manage')) return;
+  const s = id ? S.kpiSections.find(x => x.id === id) : {name:'',weight:''};
+  openForm({title: id ? 'Edit KPI Section' : 'Add KPI Section',
+    fields:[{key:'name',label:'Section name',value:s.name,required:true},{key:'weight',label:'Section weight (%)',type:'number',step:'0.1',value:s.weight}],
+    onSubmit: v => { v.weight = num(v.weight);
+      return id ? save(`Edited KPI section: ${v.name}`, D => { const x = D.kpiSections.find(y => y.id === id); if (!x) return false; Object.assign(x, v); })
+                : save(`Added KPI section: ${v.name}`, D => { D.kpiSections.push({id:uid(), items:[], ...v}); }); }});
+}
+function kpiForm(sid, id){
+  if (!guard(id ? 'edit' : 'manage')) return;
+  const s = S.kpiSections.find(x => x.id === sid);
+  const i = id ? s.items.find(x => x.id === id) : {kpi:'',base:'',stretch:'',weight:'',status:'Not Started',actual:'',remarks:''};
+  const full = can('manage');
+  openForm({title: id ? 'Update KPI' : `Add KPI — ${s.name}`,
+    extraHtml: id && !full ? `<div class="muted small" style="margin-bottom:12px"><b>${esc(i.kpi)}</b><br>Base: ${esc(i.base)} · Stretch: ${esc(i.stretch)}</div>` : '',
+    fields:[
+      ...(full ? [{key:'kpi',label:'KPI',value:i.kpi,required:true},{key:'base',label:'Base target',value:i.base},
+                  {key:'stretch',label:'Stretch target',value:i.stretch},{key:'weight',label:'Weight (%)',type:'number',step:'0.1',value:i.weight}] : []),
+      {key:'status',label:'Status',type:'select',options:KPI_STATUS,value:i.status},
+      {key:'actual',label:'Actual achievement',value:i.actual},
+      {key:'remarks',label:'Remarks',type:'textarea',rows:3,value:i.remarks}
+    ],
+    onSubmit: v => { if ('weight' in v) v.weight = num(v.weight);
+      return save(id ? `Updated KPI: ${i.kpi} → ${v.status}` : `Added KPI: ${v.kpi}`, D => {
+        const ds = D.kpiSections.find(y => y.id === sid); if (!ds) return false;
+        if (id) { const x = ds.items.find(y => y.id === id); if (!x) return false; Object.assign(x, v); }
+        else ds.items.push({id:uid(), ...v});
+      }); }});
+}
+function kpiAlert(){
+  const q = Math.floor(new Date().getMonth() / 3) + 1, items = S.kpiSections.flatMap(s => s.items.map(i => ({...i, section:s.name})));
+  const grp = st => items.filter(i => i.status === st);
+  const list = arr => arr.length ? arr.map(i => `- [${i.section}] ${i.kpi} (${i.weight}%)${i.actual?' — Actual: '+i.actual:''}${i.remarks?' — '+i.remarks:''}`).join('\n') : '- None';
+  const body = `PDD KPI Status Update — Q${q} FY${S.settings.fy}
+
+Summary: ${grp('Completed').length} completed, ${grp('In Progress').length} in progress, ${grp('At Risk').length} at risk, ${grp('Not Started').length} not started (total ${items.length}).
+
+AT RISK:
+${list(grp('At Risk'))}
+
+IN PROGRESS:
+${list(grp('In Progress'))}
+
+COMPLETED:
+${list(grp('Completed'))}
+
+Prepared by ${ME.name} via PDD Portal on ${fmtDate(new Date().toISOString())}.`;
+  openForm({title:`Q${q} KPI Alert to PHB Management`, submitLabel:'Open in Outlook',
+    extraHtml:'<div class="muted small" style="margin-bottom:12px">This opens Outlook with the message ready. Review it and press Send there.</div>',
+    fields:[
+      {key:'to',label:'To (emails, comma-separated)',value:S.settings.alertEmail,required:true},
+      {key:'subject',label:'Subject',value:`PDD KPI Status — Q${q} FY${S.settings.fy}`},
+      {key:'body',label:'Message',type:'textarea',rows:14,value:body}
+    ],
+    onSubmit: async v => {
+      await save(`Prepared Q${q} KPI alert to ${v.to}`, D => { D.settings.alertEmail = v.to; });
+      location.href = `mailto:${v.to.replace(/\s+/g,'')}?subject=${encodeURIComponent(v.subject)}&body=${encodeURIComponent(v.body)}`;
+    }});
+}
+
+/* ---------- REPORTS (sub-folders per month / bi-weekly period) ---------- */
+PAGES.reports = function(){
+  const kind = UI.reportTab, base = F.reports(kind), st = folderState(base);
+  const periods = (st.items || []).filter(i => i.folder).sort((a,b) => b.name.localeCompare(a.name));
+  let list;
+  if (st.error) list = `<div class="error-msg">${esc(st.error)}</div>`;
+  else if (!st.items) list = '<div class="muted pad">Loading…</div>';
+  else list = periods.map(it => {
+    const path = base + '/' + it.name, open = UI.open[path];
+    return `<div class="report-block"><div class="report-row">
+      <div class="left">📅 ${esc(it.name)} <span class="muted small" style="font-weight:400">${it.folder.childCount} file(s)</span></div>
+      <div class="actions">
+        ${can('upload') ? `<button class="btn-outline" data-act="upload-to" data-path="${esc(path)}">⬆ Upload</button>` : ''}
+        <button class="btn-download" data-act="dl-folder" data-path="${esc(path)}" ${it.folder.childCount?'':'disabled'}>⬇ Download</button>
+        <a class="btn-outline" style="text-decoration:none" href="${esc(it.webUrl)}" target="_blank" rel="noopener" title="Open in OneDrive">↗</a>
+        <button class="btn-outline" data-act="toggle" data-key="${esc(path)}" title="Show files">${open?'▴':'▾'}</button>
+        ${can('manage') ? `<button class="btn-outline" style="color:var(--red);" data-act="del-item" data-id="${it.id}" data-name="${esc(it.name)}" data-path="${esc(base)}" data-folder="1" title="Delete">🗑</button>` : ''}
+      </div></div>
+      ${open ? `<div class="report-files">${folderView(path, {filesOnly:true})}</div>` : ''}</div>`; }).join('') || '<div class="empty-state">No reports yet.</div>';
+  $('#page-reports').innerHTML = `
+    <h1>Project Reports</h1>
+    <div class="page-desc">Monthly Report Card (sorted by month) &amp; Pre-Development Report (bi-weekly) · stored in OneDrive › ${esc(relPath(base))}</div>
+    <div class="tab-row">
+      <div class="tab-pill ${kind==='monthly'?'active':''}" data-act="report-tab" data-tab="monthly">Monthly Report Card</div>
+      <div class="tab-pill ${kind==='predev'?'active':''}" data-act="report-tab" data-tab="predev">Pre-Development Report (Bi-Weekly)</div>
+    </div>
+    <div class="page-header-row" style="margin-bottom:16px;">
+      <div class="page-desc" style="margin:0;">Sorted newest first · upload PDF/PPTX per ${kind==='monthly'?'month':'period'}</div>
+      ${can('upload') ? `<button class="btn-green" data-act="add-period">+ Add ${kind==='monthly'?'Month':'Period'}</button>` : ''}
+    </div>${list}`;
+};
+function addPeriod(){
+  if (!guard('upload')) return;
+  const kind = UI.reportTab, base = F.reports(kind);
+  openForm({title: kind === 'monthly' ? 'Add Month' : 'Add Bi-Weekly Period', submitLabel:'Add',
+    fields:[ kind === 'monthly'
+      ? {key:'v',label:'Month',type:'month',required:true,value:new Date().toISOString().slice(0,7)}
+      : {key:'v',label:'Period start date',type:'date',required:true,hint:'The period runs 14 days from this date.'} ],
+    onSubmit: async v => {
+      let name;
+      if (kind === 'monthly') { const [y,m] = v.v.split('-').map(Number); name = `${v.v} (${new Date(y,m-1,1).toLocaleDateString('en-MY',{month:'long',year:'numeric'})})`; }
+      else { const [y,m,d] = v.v.split('-').map(Number), e = new Date(y,m-1,d+13);
+             name = `${v.v} to ${e.getFullYear()}-${String(e.getMonth()+1).padStart(2,'0')}-${String(e.getDate()).padStart(2,'0')}`; }
+      if ((FC[base] && FC[base].items || []).some(i => i.name.startsWith(v.v))) return formError('This period already exists.');
+      await ensureFolder(base + '/' + name); invalidate(base); UI.open[base + '/' + name] = true; render();
+      save(`Added report period: ${name}`);
+    }});
+}
+async function downloadFolder(path){
+  const it = await itemByPath(path), files = (await listChildren(it.id)).filter(x => x.file);
+  for (const f of files) { await downloadItem(f.id); await new Promise(r => setTimeout(r, 500)); }
+}
+
+/* ---------- PROJECT FOLDERS ---------- */
+PAGES.folders = function(){
+  $('#page-folders').innerHTML = `
+    <h1>Project Folders</h1>
+    <div class="page-desc">OneDrive folder per project, by category · Separate IPC tracking for Contractor &amp; Consultant</div>
+    ${S.projects.map(p => {
+      const ipcs = S.ipc.filter(i => i.projectId === p.id), open = UI.open['proj:' + p.id], tab = UI.folderTab[p.id] || 'docs';
+      const path = F.project(p);
+      let body = '';
+      if (open && tab === 'docs') {
+        const st = folderState(path);
+        if (st.error) body = `<div class="error-msg">${esc(st.error)}</div>`;
+        else if (!st.items) body = '<div class="muted pad">Loading…</div>';
+        else if (!st.item) body = `<div class="muted pad">The OneDrive folder for this project has not been created yet.
+            ${can('upload') ? `<button class="btn-sm green" data-act="create-proj-folders" data-id="${p.id}">Create folders</button>` : ''}</div>`;
+        else {
+          const cats = st.items.filter(i => i.folder).sort((a,b) => {
+            const ia = FOLDER_CATS.indexOf(a.name), ib = FOLDER_CATS.indexOf(b.name);
+            return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.name.localeCompare(b.name); });
+          const loose = st.items.filter(i => i.file);
+          body = `<div style="margin-bottom:12px"><a class="btn-sm" href="${esc(st.item.webUrl)}" target="_blank" rel="noopener">Open project folder in OneDrive ↗</a></div>`
+            + cats.map(c => {
+              const cp = path + '/' + c.name, o = UI.open[cp];
+              return `<div class="doc-wrap"><div class="doc-row"><div class="left">🗂 ${esc(c.name)}</div><div class="right">${c.folder.childCount} item(s)
+                ${can('upload') ? `<button class="upload-btn" data-act="upload-to" data-path="${esc(cp)}">⬆ Upload</button>` : ''}
+                <button class="upload-btn" data-act="toggle" data-key="${esc(cp)}">${o?'▴':'▾'}</button></div></div>
+                ${o ? `<div class="cat-files">${folderView(cp)}</div>` : ''}</div>`; }).join('')
+            + (loose.length ? `<div class="doc-wrap"><div class="cat-files" style="padding-top:6px">${folderView(path, {filesOnly:true})}</div></div>` : '');
+        }
+      }
+      if (open && tab === 'ipc') body = ['Contractor','Consultant'].map(party => {
+        const rows = ipcs.filter(i => i.party === party).sort((a,b) => (a.date||'').localeCompare(b.date||''));
+        const tc = rows.reduce((a,i) => a + num(i.claimed), 0), tce = rows.reduce((a,i) => a + num(i.certified), 0);
+        return `<div class="ipc-block"><div class="ipc-head"><b>${party} IPC</b>
+          ${can('edit') ? `<button class="btn-sm green" data-act="add-ipc" data-id="${p.id}" data-party="${party}">+ Add IPC</button>` : ''}</div>
+          <div class="table-wrap"><table><tr><th>IPC No.</th><th>Date</th><th>Amount Claimed</th><th>Amount Certified</th><th>Status</th><th>Remarks</th>${can('edit')?'<th></th>':''}</tr>
+          ${rows.map(i => `<tr><td>${esc(i.no)}</td><td style="white-space:nowrap">${fmtDate(i.date)}</td><td>${fmtRM(i.claimed)}</td><td>${fmtRM(i.certified)}</td>
+            <td><span class="status-pill ${i.status==='Paid'||i.status==='Certified'?'completed':i.status==='Rejected'?'atrisk':'inprogress'}">${esc(i.status)}</span></td><td>${esc(i.remarks)||'—'}</td>
+            ${can('edit') ? `<td class="actions"><button class="btn-sm" data-act="edit-ipc" data-id="${i.id}">Edit</button>${can('manage')?`<button class="btn-sm red" data-act="del-ipc" data-id="${i.id}">✕</button>`:''}</td>` : ''}</tr>`).join('')}
+          ${rows.length ? `<tr class="total"><td colspan="2">Total (${rows.length})</td><td>${fmtRM(tc)}</td><td>${fmtRM(tce)}</td><td colspan="3"></td></tr>` : `<tr><td colspan="7" class="muted">No ${party.toLowerCase()} IPC entries yet.</td></tr>`}
+          </table></div></div>`; }).join('');
+      return `<div class="folder-card">
+        <div class="folder-head" data-act="toggle" data-key="proj:${p.id}"><div class="left">📁<div><h4>${esc(p.name)}</h4>
+          <div class="sub">${esc(p.type)} · GDV: ${esc(p.gdv||'TBA')} · ${ipcs.length} IPC entries</div></div></div><div>${open?'▴':'▾'}</div></div>
+        ${open ? `<div class="folder-body"><div class="folder-tabs">
+          <div class="folder-tab ${tab==='docs'?'active':''}" data-act="folder-tab" data-id="${p.id}" data-tab="docs">Documents</div>
+          <div class="folder-tab ${tab==='ipc'?'active':''}" data-act="folder-tab" data-id="${p.id}" data-tab="ipc">IPC Tracking</div></div>${body}</div>` : ''}
+      </div>`; }).join('') || '<div class="empty-state">No projects yet. Add one from the Dashboard.</div>'}`;
+};
+function ipcForm(pid, party, id){
+  if (!guard('edit')) return;
+  const i = id ? S.ipc.find(x => x.id === id) : {party, no:'', date:new Date().toISOString().slice(0,10), claimed:'', certified:'', status:'Submitted', remarks:''};
+  openForm({title: id ? 'Edit IPC Entry' : `Add ${party} IPC — ${projName(pid)}`,
+    fields:[
+      {key:'party',label:'Party',type:'select',options:['Contractor','Consultant'],value:i.party},
+      {key:'no',label:'IPC No.',value:i.no,required:true,hint:'e.g. IPC 12'},
+      {key:'date',label:'Date',type:'date',value:i.date},
+      {key:'claimed',label:'Amount claimed (RM)',type:'number',step:'0.01',value:i.claimed},
+      {key:'certified',label:'Amount certified (RM)',type:'number',step:'0.01',value:i.certified},
+      {key:'status',label:'Status',type:'select',options:IPC_STATUS,value:i.status},
+      {key:'remarks',label:'Remarks',type:'textarea',rows:2,value:i.remarks}
+    ],
+    onSubmit: v => { v.claimed = num(v.claimed); v.certified = num(v.certified);
+      return save(`${id ? 'Edited' : 'Added'} ${v.party} ${v.no} (${projName(pid)})`, D => {
+        if (id) { const x = D.ipc.find(y => y.id === id); if (!x) return false; Object.assign(x, v); }
+        else D.ipc.push({id:uid(), projectId:pid, ...v});
+      }); }});
+}
+
+/* ---------- ADMIN ---------- */
+PAGES.admin = function(){
+  $('#page-admin').innerHTML = `
+    <h1>Admin</h1><div class="page-desc">Access, settings and activity log</div>
+    <div class="admin-card"><h3>Who can sign in</h3>
+      <div class="muted small" style="line-height:1.7">Portal roles are managed in <b>Microsoft Entra ID</b>: <b>Enterprise applications → PDD Portal → Users and groups</b>.<br>
+        <code>PDD.Admin</code> everything · <code>PDD.Manager</code> edit, upload, delete · <code>PDD.Member</code> edit &amp; upload · <code>PDD.TopMgmt</code> view &amp; download only.<br>
+        Each person must <b>also</b> have access to the department OneDrive folder: in OneDrive, open the folder → <b>Share</b> → PDD team <b>Can edit</b>, Top Mgmt <b>Can view</b>.</div></div>
+    <div class="admin-card"><h3>Settings</h3>
+      <div class="muted small" style="margin:6px 0 12px">FY${esc(S.settings.fy)} · KPI alert to: ${esc(S.settings.alertEmail)||'(not set)'}<br>
+        Storage: department OneDrive folder “${esc(ROOT_NAME)}” ${FC[F.root()] && FC[F.root()].item ? `· <a href="${esc(FC[F.root()].item.webUrl)}" target="_blank" rel="noopener" style="color:var(--green)">open in OneDrive ↗</a>` : ''}</div>
+      <div class="btn-row"><button class="btn-outline" data-act="settings">Edit financial year &amp; alert email</button>
+        <button class="btn-outline" data-act="setup-folders">Create / repair PDD folders</button>
+        <button class="btn-outline" data-act="export">⬇ Export portal data (JSON)</button></div></div>
+    <div class="admin-card"><h3>Activity Log</h3><div class="muted small" style="margin-bottom:12px">Latest 100 of ${S.log.length} entries. OneDrive also keeps its own version history and audit log for every file.</div>
+      <div class="table-wrap"><table><tr><th>When</th><th>User</th><th>Action</th></tr>
+      ${S.log.slice(0,100).map(l => `<tr><td style="white-space:nowrap">${fmtDT(l.at)}</td><td>${esc(l.by)}</td><td>${esc(l.action)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">No activity yet.</td></tr>'}
+      </table></div></div>`;
+};
+function settingsForm(){
+  if (!guard('admin')) return;
+  openForm({title:'Settings',
+    fields:[{key:'fy',label:'Financial year',value:S.settings.fy,required:true},
+            {key:'alertEmail',label:'Default KPI alert recipients',value:S.settings.alertEmail,hint:'Comma-separated emails of PHB management'}],
+    onSubmit: v => save('Updated settings', D => { Object.assign(D.settings, v); })});
+}
+async function setupFoldersAction(){
+  if (!guard('manage')) return;
+  toast('Creating folders in OneDrive…', '', 60000);
+  try { forgetFolderIds(); await setupFolders(); invalidate(F.root()); render(); toast('PDD folders are ready.', 'ok'); }
+  catch(e) { toast('Folder setup failed: ' + e.message, 'err', 8000); }
+}
+function exportData(){
+  const url = URL.createObjectURL(new Blob([JSON.stringify(S, null, 2)], {type:'application/json'}));
+  const a = document.createElement('a'); a.href = url; a.download = `pdd-portal-data-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+/* =====================================================================
+   6. CLICK ACTIONS
+   ===================================================================== */
+const ACT = {
+  'nav': d => showPage(d.page),
+  'logout': () => Auth.signOut(),
+  'close-modal': closeModal,
+  'add-project': () => projectForm(),
+  'edit-project': d => projectForm(d.id),
+  'del-project': d => deleteProject(d.id),
+  'add-note': d => addNote(d.id),
+  'open-folder': d => { UI.open['proj:' + d.id] = true; UI.folderTab[d.id] = 'docs'; showPage('folders'); },
+  'browse': d => { UI.browsePath = d.path; UI.search = null; UI.searchQ = ''; if (UI.page !== 'documents') showPage('documents'); else render(); },
+  'clear-search': () => { UI.search = null; UI.searchQ = ''; render(); },
+  'refresh': d => { invalidate(d.path); render(); },
+  'upload-to': d => { if (guard('upload')) pickFiles(files => uploadTo(d.path, files)); },
+  'new-folder': d => newFolder(d.path),
+  'dl': d => downloadItem(d.id),
+  'dl-folder': d => downloadFolder(d.path),
+  'rename': d => renameItem(d),
+  'del-item': d => deleteItem(d),
+  'toggle': d => { UI.open[d.key] = !UI.open[d.key]; render(); },
+  'kpi-alert': kpiAlert,
+  'add-section': () => sectionForm(),
+  'edit-section': d => sectionForm(d.id),
+  'del-section': d => { if (!guard('manage')) return; const s = S.kpiSections.find(x => x.id === d.id);
+      if (confirm(`Delete section "${s.name}" and its ${s.items.length} KPI(s)?`)) save(`Deleted KPI section: ${s.name}`, D => { D.kpiSections = D.kpiSections.filter(x => x.id !== d.id); }); },
+  'add-kpi': d => kpiForm(d.id),
+  'edit-kpi': d => kpiForm(d.sid, d.id),
+  'del-kpi': d => { if (!guard('manage')) return; const s = S.kpiSections.find(x => x.id === d.sid), i = s.items.find(x => x.id === d.id);
+      if (confirm(`Delete KPI "${i.kpi}"?`)) save(`Deleted KPI: ${i.kpi}`, D => { const x = D.kpiSections.find(y => y.id === d.sid); if (x) x.items = x.items.filter(y => y.id !== d.id); }); },
+  'report-tab': d => { UI.reportTab = d.tab; render(); },
+  'add-period': addPeriod,
+  'folder-tab': d => { UI.folderTab[d.id] = d.tab; render(); },
+  'create-proj-folders': async d => { if (!guard('upload')) return; toast('Creating folders…'); await ensureProjectFolders(proj(d.id).folder); render(); toast('Folders created.', 'ok'); },
+  'add-ipc': d => ipcForm(d.id, d.party),
+  'edit-ipc': d => { const i = S.ipc.find(x => x.id === d.id); ipcForm(i.projectId, i.party, i.id); },
+  'del-ipc': d => { if (!guard('manage')) return; const i = S.ipc.find(x => x.id === d.id);
+      if (confirm(`Delete ${i.party} ${i.no}?`)) save(`Deleted ${i.party} ${i.no} (${projName(i.projectId)})`, D => { D.ipc = D.ipc.filter(x => x.id !== d.id); }); },
+  'settings': settingsForm,
+  'setup-folders': setupFoldersAction,
+  'export': exportData
+};
+document.addEventListener('click', e => {
+  if (e.target.closest('a[href]')) return;                       // normal links (Open in OneDrive)
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  if (el.dataset.act === 'browse' && e.target.closest('[data-stop]')) return;   // clicks on row buttons
+  const fn = ACT[el.dataset.act]; if (!fn || !ME) return;
+  e.preventDefault();
+  Promise.resolve(fn(el.dataset, el)).catch(err => { console.error(err); toast(err.message, 'err', 6000); });
+});
+
+start();
 </script>
 </body>
 </html>
