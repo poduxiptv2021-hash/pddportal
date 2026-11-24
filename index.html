@@ -238,6 +238,10 @@
   .crumbs a{color:var(--teal);cursor:pointer;font-weight:600;}
   .crumbs a:hover{text-decoration:underline;}
   .crumbs span.sep{color:var(--text-dim);}
+  .back-btn{padding:6px 12px;margin-right:8px;font-size:13.5px;}
+  .up-row{border-top:none;}
+  .up-row + .file-row{border-top:1px solid var(--line);}
+  .up-row + .muted{border-top:1px solid var(--line);}
   .row-folder{cursor:pointer;}
   .row-folder:hover{background:#FAFCF9;}
   a.btn-sm,a.btn-outline,a.btn-green,a.btn-download{text-decoration:none;}
@@ -368,6 +372,7 @@ const COLORS = {blue:'#00827A',amber:'#C97F00',green:'#5A9A0A',grey:'#9AA5AE'};
 const SMALL_UPLOAD = 4 * 1024 * 1024;     // bigger files use a chunked upload session
 
 const ICO = {
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>',
   folder:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
   chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
   file:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>',
@@ -945,7 +950,9 @@ PAGES.documents = function(){
   } else if (st.items && !st.item && !st.loading) {
     body = `<div class="empty-state">This folder does not exist yet in OneDrive.${can('admin') ? '<br><br><button class="btn-green" data-act="setup-folders">Create the PDD folders</button>' : ''}</div>`;
   } else {
-    body = folderView(path, {browse:true, protect:atRoot, empty:'This folder is empty.'});
+    const upRow = atRoot ? '' : `<div class="file-row row-folder up-row" data-act="browse" data-path="${esc(parentOf(path))}">
+      <div style="display:flex;gap:12px;align-items:center"><span class="ico navy">${ICO.up}</span><div><b>Up one level</b><div class="muted small">Back to ${esc(parentOf(path) === F.root() ? F.root() : parentOf(path).split('/').pop())}</div></div></div></div>`;
+    body = upRow + folderView(path, {browse:true, protect:atRoot, empty:'This folder is empty.'});
   }
   $('#page-documents').innerHTML = `
     <div class="page-header-row"><div><h1>Documents</h1><div class="page-desc">The department's shared OneDrive folder — everyone sees the same files</div></div>
@@ -957,7 +964,7 @@ PAGES.documents = function(){
     <form class="btn-row" id="search-form" style="margin-bottom:6px">
       <input class="search" id="doc-search" style="margin:0" placeholder="Search all PDD files…" value="${esc(UI.searchQ)}">
       <button class="btn-outline" type="submit">Search</button></form>
-    <div class="crumbs" style="margin-top:14px">${crumbs}</div>
+    <div class="crumbs" style="margin-top:14px">${atRoot ? '' : `<button class="btn-outline back-btn" data-act="browse" data-path="${esc(parentOf(path))}">← Back</button>`}${crumbs}</div>
     <div class="kpi-section" style="padding:4px 20px">${body}</div>`;
   $('#search-form').addEventListener('submit', e => { e.preventDefault(); searchFiles($('#doc-search').value.trim()); });
 };
