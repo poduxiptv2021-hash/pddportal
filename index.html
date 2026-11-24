@@ -239,6 +239,23 @@
   .crumbs a:hover{text-decoration:underline;}
   .crumbs span.sep{color:var(--text-dim);}
   .back-btn{padding:6px 12px;margin-right:8px;font-size:13.5px;}
+  .fr-main{display:flex;gap:12px;align-items:center;min-width:0;}
+  .file-link{color:var(--navy-2);font-weight:700;text-decoration:none;cursor:pointer;}
+  .file-link:hover{color:var(--teal);text-decoration:underline;}
+  .loc-link{color:var(--teal);cursor:pointer;}
+  .loc-link:hover{text-decoration:underline;}
+  .fbadge{font-size:10.5px;font-weight:700;letter-spacing:.04em;font-family:var(--font-head);}
+  .b-pdf{background:#FDE7E4;color:#B42318;} .b-doc{background:#E3ECFB;color:#1E4FA8;} .b-xls{background:#E2F3E6;color:#18753B;}
+  .b-ppt{background:#FDEBDD;color:#B4510F;} .b-img{background:#EFE7FB;color:#6232B0;} .b-zip{background:#F1EDE2;color:#6B5B2E;}
+  .b-cad{background:#E1F1F4;color:#0B6B7A;} .b-oth{background:#EDF0F2;color:#4F5E6B;}
+  .file-row .actions .sec{opacity:0;transition:opacity .12s;}
+  .file-row:hover .actions .sec,.file-row:focus-within .actions .sec{opacity:1;}
+  @media (hover:none){ .file-row .actions .sec{opacity:1;} }
+  .file-row{padding:10px 8px;margin:0 -8px;border-radius:8px;}
+  .file-row:hover{background:#FAFCF9;}
+  [data-drop-path]{transition:box-shadow .12s,background .12s;}
+  .drop-on{box-shadow:0 0 0 3px var(--teal) inset !important;background:#EAF6F4 !important;}
+  .drop-on::after{content:"Drop to upload here";display:block;text-align:center;padding:10px;color:#006C66;font-weight:700;}
   .up-row{border-top:none;}
   .up-row + .file-row{border-top:1px solid var(--line);}
   .up-row + .muted{border-top:1px solid var(--line);}
@@ -399,12 +416,7 @@ function seed(){
   return {
     version:2,
     settings:{ fy:'2026', alertEmail:'' },
-    projects:[
-      p('p1','Bangsar 61','Mixed-Commercial Development','RM 4,858.5 mn','In Progress','CPC issued 29 Dec 2025. Partial CCC pending DBKL road widening approval.','BOD Approval – June 2026'),
-      p('p2','Gleneagles KL – Block C','Hospital Development','RM 317.6 mn','At Risk','TSGPQ suspension ongoing. UMC & IHH engagement in progress.','Way Forward Finalization – June 2026'),
-      p('p3','Plaza Conlay','Mixed-Use Development','RM 3.17 bn','In Progress','PC issued Feb 2026. CMGD for open carpark targeted July 2026.','CMGD – July 2026'),
-      p('p4','KPJ 2','Hospital Block','TBA','In Progress','KPJ submitted 2nd LOI on 15 Apr 2026. BOD approval from KPJ expected Aug 2026.','HOT Execution – Aug 2026')
-    ],
+    projects:[],   // project details are kept in OneDrive (_system/portal-data.json), not in this public file
     kpiSections:[
       {id:'s1',name:'Innovation/Knowledge/CSR',weight:10,items:[
         {id:'k1',kpi:'CSR',base:'80% staff participation',stretch:'90% staff participation',weight:2.5,status:'Completed',actual:'',remarks:''},
@@ -445,7 +457,7 @@ function toast(msg, type, ms){
 /* =====================================================================
    1. MICROSOFT ENTRA SIGN-IN  (authorization code flow with PKCE)
    ===================================================================== */
-const AUTH_KEY  = 'pddPortal.auth', PKCE_KEY = 'pddPortal.pkce';
+const AUTH_KEY  = 'pddPortal.auth', PKCE_KEY = 'pddPortal.pkce', AUTO_KEY = 'pddPortal.autoSignIn';
 const SCOPES    = 'openid profile offline_access User.Read Files.ReadWrite.All';
 const AUTHORITY = () => `https://login.microsoftonline.com/${CONFIG.tenantId}/oauth2/v2.0`;
 const REDIRECT  = location.origin + location.pathname.replace(/index\.html$/,'');
@@ -458,12 +470,13 @@ function parseJwt(t){
 }
 const Auth = {
   get(){ try { return JSON.parse(sessionStorage.getItem(AUTH_KEY)); } catch(e){ return null; } },
-  async signIn(){
+  async signIn(silent){
     const verifier = randStr(48), state = randStr(16), nonce = randStr(16);
     const challenge = b64url(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
-    sessionStorage.setItem(PKCE_KEY, JSON.stringify({verifier, state, nonce, page:UI.page}));
+    sessionStorage.setItem(PKCE_KEY, JSON.stringify({verifier, state, nonce, page:UI.page, hash:location.hash, silent:!!silent}));
     const q = new URLSearchParams({client_id:CONFIG.clientId, response_type:'code', redirect_uri:REDIRECT, response_mode:'query',
       scope:SCOPES, state, nonce, code_challenge:challenge, code_challenge_method:'S256'});
+    if (silent) { q.set('prompt', 'none'); const u = (this.lastUser() || ''); if (u) q.set('login_hint', u); }
     location.href = `${AUTHORITY()}/authorize?${q}`;
   },
   async handleRedirect(){
@@ -472,6 +485,9 @@ const Auth = {
     history.replaceState(null, '', REDIRECT);
     if (p.get('error')) {
       const code = p.get('error'), desc = p.get('error_description') || '';
+      const was = JSON.parse(sessionStorage.getItem(PKCE_KEY) || 'null'); sessionStorage.removeItem(PKCE_KEY);
+      if (was && was.hash) history.replaceState(null, '', REDIRECT + was.hash);
+      if (was && was.silent && /login_required|interaction_required|consent_required|account_selection_required/.test(code)) return 'silent-failed';
       if (code === 'access_denied' || /AADSTS(65001|90094|90095)/.test(desc))
         throw new Error('Sign-in was not completed: the PDD Portal app is still waiting for IT to grant admin consent (Entra → App registrations → PDD Portal → API permissions → Grant admin consent).');
       if (/AADSTS50105/.test(desc)) throw new Error('Your account has not been given access to the PDD Portal. Ask the PDD Admin to add you.');
@@ -481,6 +497,7 @@ const Auth = {
     sessionStorage.removeItem(PKCE_KEY);
     if (!saved || saved.state !== p.get('state')) throw new Error('Sign-in could not be verified. Please try again.');
     if (saved.page) UI.page = saved.page;
+    if (saved.hash) { history.replaceState(null, '', REDIRECT + saved.hash); readLoc(); }
     await this.token({grant_type:'authorization_code', code:p.get('code'), code_verifier:saved.verifier, redirect_uri:REDIRECT}, saved.nonce);
   },
   async token(params, nonce){
@@ -493,6 +510,7 @@ const Auth = {
     if (nonce && claims.nonce !== nonce) throw new Error('Sign-in could not be verified (nonce). Please try again.');
     const t = {access:j.access_token, refresh:j.refresh_token || prev.refresh, exp:Date.now() + (j.expires_in - 120) * 1000, claims};
     sessionStorage.setItem(AUTH_KEY, JSON.stringify(t));
+    try { if (claims && claims.preferred_username) localStorage.setItem('pddPortal.lastUser', claims.preferred_username); } catch(e){}
     return t;
   },
   async accessToken(){
@@ -505,8 +523,10 @@ const Auth = {
     sessionStorage.removeItem(AUTH_KEY); this.signIn();
     throw new Error('Your session expired. Signing you in again…');
   },
+  lastUser(){ try { return localStorage.getItem('pddPortal.lastUser'); } catch(e){ return null; } },
   signOut(){
     sessionStorage.removeItem(AUTH_KEY);
+    try { localStorage.removeItem(AUTO_KEY); } catch(e){}
     location.href = `${AUTHORITY()}/logout?post_logout_redirect_uri=${encodeURIComponent(REDIRECT)}`;
   }
 };
@@ -692,8 +712,19 @@ async function start(){
     showLogin('<b>Setup needed.</b> Open <code>index.html</code> and fill in the <code>CONFIG</code> section (tenant ID, client ID and the OneDrive folder link). See README, section 3.');
     $('#btn-signin').disabled = true; return;
   }
-  try { await Auth.handleRedirect(); } catch(e) { showLogin(esc(e.message)); return; }
-  if (!Auth.get()) { showLogin(); return; }
+  readLoc();
+  let r;
+  try { r = await Auth.handleRedirect(); } catch(e) { showLogin(esc(e.message)); return; }
+  if (!Auth.get()) {
+    let auto = false; try { auto = localStorage.getItem(AUTO_KEY) === '1'; } catch(e){}
+    if (auto && r !== 'silent-failed' && !sessionStorage.getItem('pddPortal.triedSilent')) {
+      sessionStorage.setItem('pddPortal.triedSilent', '1');
+      showLogin('Signing you in…', false, 'info'); $('#btn-signin').classList.add('hidden');
+      Auth.signIn(true); return;
+    }
+    showLogin(); return;
+  }
+  sessionStorage.removeItem('pddPortal.triedSilent');
   const c = Auth.get().claims || {};
   const roles = (c.roles || []).map(r => ROLE_MAP[r]).filter(Boolean);
   ME = {name:c.name || c.preferred_username || 'User', email:c.preferred_username || c.email || '', role:ROLE_ORDER.find(r => roles.includes(r))};
@@ -704,6 +735,8 @@ async function start(){
   showLogin('Connecting to the PDD OneDrive folder…', true, 'info');
   try { await initDrive(); await loadData(); }
   catch(e) { showLogin('Could not open the PDD folder in OneDrive.<br>' + esc(e.message), true); return; }
+  if (UI.pendingRel) { UI.browsePath = F.root() + '/' + UI.pendingRel; UI.pendingRel = ''; }
+  try { localStorage.setItem(AUTO_KEY, '1'); } catch(e){}
   enterApp();
 }
 function enterApp(){
@@ -718,9 +751,27 @@ $('#btn-signin').addEventListener('click', () => Auth.signIn());
 $('#btn-signout-login').addEventListener('click', () => Auth.signOut());
 
 const PAGES = {};
-function showPage(name){
+function locHash(){
+  const rel = UI.page === 'documents' && UI.browsePath && UI.browsePath !== F.root() ? '/' + relPath(UI.browsePath).split('/').map(encodeURIComponent).join('/') : '';
+  return '#' + UI.page + rel;
+}
+function pushLoc(){ const h = locHash(); if (location.hash !== h) history.pushState(null, '', h); }
+function readLoc(){
+  const h = decodeURIComponent(location.hash.replace(/^#/, ''));
+  if (!h) return;
+  const [page, ...rest] = h.split('/');
+  if (PAGES[page]) UI.page = page;
+  UI.pendingRel = rest.join('/');
+}
+window.addEventListener('popstate', () => {
+  if (!ME || !S) return;
+  readLoc(); UI.browsePath = UI.pendingRel ? F.root() + '/' + UI.pendingRel : F.root(); UI.search = null; UI.searchQ = '';
+  showPage(UI.page, true);
+});
+function showPage(name, fromHistory){
   if (name === 'admin' && !can('admin')) name = 'dashboard';
   UI.page = name;
+  if (!fromHistory) pushLoc();
   document.querySelectorAll('.nav-link').forEach(a => a.classList.toggle('active', a.dataset.page === name));
   document.querySelectorAll('.page').forEach(pg => pg.classList.toggle('active', pg.id === 'page-' + name));
   render(); window.scrollTo(0,0);
@@ -774,12 +825,24 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 /* =====================================================================
    4. FILE LISTS (shared by Documents, Reports, Project Folders)
    ===================================================================== */
-function itemActions(it, folderPath, {protect=false} = {}){
+function itemActions(it, folderPath, {protect=false, browse=false} = {}){
   const isFolder = !!it.folder;
-  return `<a class="btn-sm" href="${esc(it.webUrl)}" target="_blank" rel="noopener">${isFolder ? 'Open in OneDrive' : 'Open'}</a>`
-    + (isFolder ? '' : `<button type="button" class="btn-sm green" data-act="dl" data-id="${it.id}">Download</button>`)
-    + (can('edit') && !protect ? `<button type="button" class="btn-sm" data-act="rename" data-id="${it.id}" data-name="${esc(it.name)}" data-path="${esc(folderPath)}">Rename</button>` : '')
-    + (can('manage') && !protect ? `<button type="button" class="btn-sm red" data-act="del-item" data-id="${it.id}" data-name="${esc(it.name)}" data-path="${esc(folderPath)}" data-folder="${isFolder?1:''}">Delete</button>` : '');
+  return (isFolder && browse ? '' : `<a class="btn-sm" href="${esc(it.webUrl)}" target="_blank" rel="noopener">${isFolder ? 'Open in OneDrive ↗' : 'Open'}</a>`)
+    + (isFolder ? '' : `<button type="button" class="btn-sm green sec" data-act="dl" data-id="${it.id}">Download</button>`)
+    + (can('edit') && !protect ? `<button type="button" class="btn-sm sec" data-act="rename" data-id="${it.id}" data-name="${esc(it.name)}" data-path="${esc(folderPath)}">Rename</button>` : '')
+    + (can('manage') && !protect ? `<button type="button" class="btn-sm red sec" data-act="del-item" data-id="${it.id}" data-name="${esc(it.name)}" data-path="${esc(folderPath)}" data-folder="${isFolder?1:''}">Delete</button>` : '');
+}
+/* coloured file-type badge */
+function fileBadge(it){
+  if (it.folder) return `<span class="ico teal">${ICO.folder}</span>`;
+  const e = (it.name.split('.').pop() || '').toLowerCase();
+  const t = e === 'pdf' ? ['PDF','b-pdf'] : ['doc','docx'].includes(e) ? ['DOC','b-doc'] : ['xls','xlsx','csv'].includes(e) ? ['XLS','b-xls']
+          : ['ppt','pptx'].includes(e) ? ['PPT','b-ppt'] : ['png','jpg','jpeg','gif','webp','heic'].includes(e) ? ['IMG','b-img']
+          : ['zip','rar','7z'].includes(e) ? ['ZIP','b-zip'] : ['dwg','dxf'].includes(e) ? ['CAD','b-cad'] : [(e.slice(0,4) || 'FILE').toUpperCase(),'b-oth'];
+  return `<span class="ico fbadge ${t[1]}">${t[0]}</span>`;
+}
+function itemName(it, nav){
+  return it.folder || nav ? `<b>${esc(it.name)}</b>` : `<a class="file-link" href="${esc(it.webUrl)}" target="_blank" rel="noopener" title="Open in OneDrive">${esc(it.name)}</a>`;
 }
 function fileMeta(it){
   const who = (it.lastModifiedBy && it.lastModifiedBy.user && it.lastModifiedBy.user.displayName) || '';
@@ -794,12 +857,12 @@ function folderView(path, {browse=false, filesOnly=false, protect=false, empty='
   if (st.error) return `<div class="error-msg">${esc(st.error)} <button class="btn-sm" data-act="refresh" data-path="${esc(path)}">Retry</button></div>`;
   if (!st.items) return '<div class="muted small pad">Loading…</div>';
   const items = sortItems(filesOnly ? st.items.filter(i => i.file) : st.items);
-  if (!items.length) return `<div class="muted small pad">${empty}</div>`;
+  if (!items.length) return `<div class="muted small pad empty-row">${empty}</div>`;
   return items.map(it => {
     const sub = path + '/' + it.name, nav = browse && it.folder;
     return `<div class="file-row ${nav?'row-folder':''}" ${nav?`data-act="browse" data-path="${esc(sub)}"`:''}>
-      <div style="display:flex;gap:12px;align-items:center"><span class="ico ${it.folder?'teal':''}">${it.folder ? ICO.folder : ICO.doc}</span><div><b>${esc(it.name)}</b><div class="muted small">${fileMeta(it)}</div></div></div>
-      <div class="actions" data-stop="1">${itemActions(it, path, {protect: protect && it.folder})}</div></div>`;
+      <div class="fr-main">${fileBadge(it)}<div>${itemName(it, nav)}<div class="muted small">${fileMeta(it)}</div></div></div>
+      <div class="actions" data-stop="1">${itemActions(it, path, {protect: protect && it.folder, browse})}</div></div>`;
   }).join('');
 }
 function pickFiles(cb, accept){
@@ -841,6 +904,28 @@ async function deleteItem(d){
   save(`Deleted ${relPath(d.path + '/' + d.name)}`);
 }
 
+/* ---------- drag & drop upload: drop files on any element with data-drop-path ---------- */
+let dropTarget = null;
+const hasFiles = e => e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
+document.addEventListener('dragover', e => {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  const z = e.target.closest && e.target.closest('[data-drop-path]');
+  e.dataTransfer.dropEffect = z ? 'copy' : 'none';
+  if (z !== dropTarget) { if (dropTarget) dropTarget.classList.remove('drop-on'); dropTarget = z; if (z) z.classList.add('drop-on'); }
+});
+document.addEventListener('dragleave', e => { if (dropTarget && !e.relatedTarget) { dropTarget.classList.remove('drop-on'); dropTarget = null; } });
+document.addEventListener('drop', e => {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  const z = e.target.closest && e.target.closest('[data-drop-path]');
+  if (dropTarget) dropTarget.classList.remove('drop-on'); dropTarget = null;
+  if (!z) return;
+  const files = [...e.dataTransfer.files].filter(f => f.size > 0 || f.type);
+  if (!files.length) { toast('Folders cannot be dropped. Drop files instead.', 'err'); return; }
+  uploadTo(z.dataset.dropPath, files);
+});
+
 /* =====================================================================
    5. PAGES
    ===================================================================== */
@@ -874,7 +959,12 @@ PAGES.dashboard = function(){
     <div class="progress-grid">${P.map(p => `<div class="progress-card"><h3>${esc(p.name)}</h3>
       <div class="donut" style="--p:${clampPct(p.progress)};--c:${COLORS[statusCls(p.status)]}"><span class="${statusCls(p.status)}">${+p.progress||0}%</span></div>
       <span class="badge ${statusCls(p.status)}">${esc(p.status)}</span></div>`).join('') || '<div class="muted">No projects yet.</div>'}</div>
-    <div class="proj-grid">${P.map(card).join('')}</div>`;
+    <div class="proj-grid">${P.map(card).join('')}</div>
+    <div class="section-label" style="margin-top:34px">Recent activity</div>
+    <div class="kpi-section"><div class="table-wrap"><table>
+      ${S.log.slice(0,8).map(l => `<tr><td style="white-space:nowrap;width:190px" class="muted">${fmtDT(l.at)}</td><td style="width:200px"><b>${esc(l.by)}</b></td><td>${esc(l.action)}</td></tr>`).join('')
+        || '<tr><td class="muted">No activity yet.</td></tr>'}
+    </table></div></div>`;
 };
 function projectForm(id){
   if (!guard(id ? 'edit' : 'manage')) return;
@@ -944,15 +1034,13 @@ PAGES.documents = function(){
   if (UI.search) {
     body = `<div class="page-header-row" style="margin-bottom:10px"><div class="muted">${UI.search.length} result(s) for "<b>${esc(UI.searchQ)}</b>"</div>
       <button class="btn-sm" data-act="clear-search">✕ Clear search</button></div>` +
-      (UI.search.map(r => `<div class="file-row"><div>${r.item.folder?'📁':fileIcon(r.item.name)} <b>${esc(r.item.name)}</b>
-        <div class="muted small">${esc(relPath(r.path) || F.root())} · ${fileMeta(r.item)}</div></div>
+      (UI.search.map(r => `<div class="file-row"><div class="fr-main">${fileBadge(r.item)}<div>${r.item.folder ? `<a class="file-link" data-act="browse" data-path="${esc(r.path + '/' + r.item.name)}">${esc(r.item.name)}</a>` : itemName(r.item)}
+        <div class="muted small">in <a class="loc-link" data-act="browse" data-path="${esc(r.path)}">${esc(relPath(r.path) || F.root())}</a> · ${fileMeta(r.item)}</div></div></div>
         <div class="actions">${itemActions(r.item, r.path)}</div></div>`).join('') || '<div class="muted pad">Nothing found.</div>');
   } else if (st.items && !st.item && !st.loading) {
     body = `<div class="empty-state">This folder does not exist yet in OneDrive.${can('admin') ? '<br><br><button class="btn-green" data-act="setup-folders">Create the PDD folders</button>' : ''}</div>`;
   } else {
-    const upRow = atRoot ? '' : `<div class="file-row row-folder up-row" data-act="browse" data-path="${esc(parentOf(path))}">
-      <div style="display:flex;gap:12px;align-items:center"><span class="ico navy">${ICO.up}</span><div><b>Up one level</b><div class="muted small">Back to ${esc(parentOf(path) === F.root() ? F.root() : parentOf(path).split('/').pop())}</div></div></div></div>`;
-    body = upRow + folderView(path, {browse:true, protect:atRoot, empty:'This folder is empty.'});
+    body = folderView(path, {browse:true, protect:atRoot, empty: can('upload') ? 'This folder is empty. Drag files here or click <b>Upload here</b>.' : 'This folder is empty.'});
   }
   $('#page-documents').innerHTML = `
     <div class="page-header-row"><div><h1>Documents</h1><div class="page-desc">The department's shared OneDrive folder — everyone sees the same files</div></div>
@@ -965,7 +1053,8 @@ PAGES.documents = function(){
       <input class="search" id="doc-search" style="margin:0" placeholder="Search all PDD files…" value="${esc(UI.searchQ)}">
       <button class="btn-outline" type="submit">Search</button></form>
     <div class="crumbs" style="margin-top:14px">${atRoot ? '' : `<button class="btn-outline back-btn" data-act="browse" data-path="${esc(parentOf(path))}">← Back</button>`}${crumbs}</div>
-    <div class="kpi-section" style="padding:4px 20px">${body}</div>`;
+    <div class="kpi-section drop-zone" style="padding:4px 20px" ${can('upload') && !UI.search ? `data-drop-path="${esc(path)}"` : ''}>${body}</div>
+    ${can('upload') && !UI.search ? '<div class="muted small" style="margin-top:8px">Tip: drag files from your computer onto the list to upload them here.</div>' : ''}`;
   $('#search-form').addEventListener('submit', e => { e.preventDefault(); searchFiles($('#doc-search').value.trim()); });
 };
 async function searchFiles(q){
@@ -1099,7 +1188,7 @@ PAGES.reports = function(){
   else if (!st.items) list = '<div class="muted pad">Loading…</div>';
   else list = periods.map(it => {
     const path = base + '/' + it.name, open = UI.open[path];
-    return `<div class="report-block"><div class="report-row">
+    return `<div class="report-block" ${can('upload') ? `data-drop-path="${esc(path)}"` : ''}><div class="report-row">
       <div class="left"><span class="ico navy">${ICO.cal}</span>${esc(it.name)} <span class="muted small" style="font-weight:400">${it.folder.childCount} file(s)</span></div>
       <div class="actions">
         ${can('upload') ? `<button class="btn-outline" data-act="upload-to" data-path="${esc(path)}">Upload</button>` : ''}
@@ -1166,7 +1255,7 @@ PAGES.folders = function(){
           body = `<div style="margin-bottom:12px"><a class="btn-sm" href="${esc(st.item.webUrl)}" target="_blank" rel="noopener">Open project folder in OneDrive ↗</a></div>`
             + cats.map(c => {
               const cp = path + '/' + c.name, o = UI.open[cp];
-              return `<div class="doc-wrap"><div class="doc-row"><div class="left"><span class="ico">${ICO.folder}</span>${esc(c.name)}</div><div class="right">${c.folder.childCount} item(s)
+              return `<div class="doc-wrap" ${can('upload') ? `data-drop-path="${esc(cp)}"` : ''}><div class="doc-row"><div class="left"><span class="ico">${ICO.folder}</span>${esc(c.name)}</div><div class="right">${c.folder.childCount} item(s)
                 ${can('upload') ? `<button class="upload-btn" data-act="upload-to" data-path="${esc(cp)}">Upload</button>` : ''}
                 <button class="upload-btn" data-act="toggle" data-key="${esc(cp)}">${o?'▴':'▾'}</button></div></div>
                 ${o ? `<div class="cat-files">${folderView(cp)}</div>` : ''}</div>`; }).join('')
@@ -1262,7 +1351,7 @@ const ACT = {
   'del-project': d => deleteProject(d.id),
   'add-note': d => addNote(d.id),
   'open-folder': d => { UI.open['proj:' + d.id] = true; UI.folderTab[d.id] = 'docs'; showPage('folders'); },
-  'browse': d => { UI.browsePath = d.path; UI.search = null; UI.searchQ = ''; if (UI.page !== 'documents') showPage('documents'); else render(); },
+  'browse': d => { UI.browsePath = d.path; UI.search = null; UI.searchQ = ''; if (UI.page !== 'documents') return showPage('documents'); pushLoc(); render(); },
   'clear-search': () => { UI.search = null; UI.searchQ = ''; render(); },
   'refresh': d => { invalidate(d.path); render(); },
   'upload-to': d => { if (guard('upload')) pickFiles(files => uploadTo(d.path, files)); },
