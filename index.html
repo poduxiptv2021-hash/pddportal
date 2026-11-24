@@ -1252,8 +1252,9 @@ async function downloadFolder(path){
 /* ---------- PROJECT FOLDERS ---------- */
 PAGES.folders = function(){
   $('#page-folders').innerHTML = `
-    <h1>Project Folders</h1>
-    <div class="page-desc">OneDrive folder per project, by category · Separate IPC tracking for Contractor &amp; Consultant</div>
+    <div class="page-header-row"><div><h1>Project Folders</h1>
+    <div class="page-desc">OneDrive folder per project, by category · Separate IPC tracking for Contractor &amp; Consultant</div></div>
+      ${can('manage') ? '<button class="btn-green" data-act="add-project">+ Add Project</button>' : ''}</div>
     ${S.projects.map(p => {
       const ipcs = S.ipc.filter(i => i.projectId === p.id), open = UI.open['proj:' + p.id], tab = UI.folderTab[p.id] || 'docs';
       const path = F.project(p);
@@ -1322,10 +1323,8 @@ function ipcForm(pid, party, id){
 PAGES.admin = function(){
   $('#page-admin').innerHTML = `
     <h1>Admin</h1><div class="page-desc">Access, settings and activity log</div>
-    <div class="admin-card"><h3>Who can sign in</h3>
-      <div class="muted small" style="line-height:1.7">Portal roles are managed in <b>Microsoft Entra</b>: <b>Enterprise applications → PDD Portal → Users and groups</b>.<br>
-        <code>PDD.Admin</code> everything · <code>PDD.Manager</code> edit, upload, delete · <code>PDD.Member</code> edit &amp; upload · <code>PDD.TopMgmt</code> view &amp; download only.<br>
-        Each person must <b>also</b> have the PDD Portal OneDrive folder shared with them (PDD team: <b>Can edit</b>, Top Mgmt: <b>Can view</b>).</div></div>
+    <div class="admin-card"><h3>User access</h3>
+      <div class="muted" style="line-height:1.6">To add a new user, remove someone's access or change their role, please contact the <b>IT administrator</b>.</div></div>
     <div class="admin-card"><h3>Settings</h3>
       <div class="muted small" style="margin:6px 0 12px">FY${esc(S.settings.fy)} · KPI alert to: ${esc(S.settings.alertEmail)||'(not set)'}<br>
         Storage: OneDrive folder “${esc(ROOT_NAME)}”</div>
