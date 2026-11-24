@@ -1019,9 +1019,26 @@ function addNote(id){
 }
 async function deleteProject(id){
   if (!guard('manage')) return;
-  const p = proj(id);
-  if (!confirm(`Remove project "${p.name}" from the portal (including its IPC entries)?\n\nIts OneDrive folder "Projects/${p.folder}" is NOT deleted — remove it in OneDrive if needed.`)) return;
-  save(`Removed project: ${p.name}`, D => { D.projects = D.projects.filter(x => x.id !== id); D.ipc = D.ipc.filter(i => i.projectId !== id); });
+  const p = proj(id), ipcs = S.ipc.filter(i => i.projectId === id).length;
+  openForm({title:`Delete project — ${p.name}`, submitLabel:'Delete project',
+    extraHtml:`<div class="warn-box">This removes <b>${esc(p.name)}</b> from the Dashboard and Project Folders${ipcs ? `, including its <b>${ipcs} IPC entr${ipcs===1?'y':'ies'}</b>` : ''}.</div>`,
+    fields:[{key:'folder', label:`OneDrive folder “Projects/${p.folder}”`, type:'select', value:'delete',
+      hint:'Deleted folders go to the OneDrive recycle bin and can be restored for 93 days.',
+      options:[['delete','Delete the folder and its files too'],
+               ['keep','Keep the folder and its files']]}],
+    onSubmit: async v => {
+      if (v.folder === 'delete') {
+        try {
+          const it = await itemByPath(F.project(p));
+          await graph(`/drives/${DRIVE}/items/${it.id}`, {method:'DELETE'});
+        } catch(e) { if (e.status !== 404) return formError('Could not delete the OneDrive folder: ' + e.message + ' — nothing was removed.'); }
+        forgetFolderIds(); invalidate(F.projects());
+      }
+      const ok = await save(`Deleted project: ${p.name}` + (v.folder === 'delete' ? ' (folder moved to OneDrive recycle bin)' : ' (OneDrive folder kept)'),
+        D => { D.projects = D.projects.filter(x => x.id !== id); D.ipc = D.ipc.filter(i => i.projectId !== id); });
+      if (ok) toast(v.folder === 'delete' ? 'Project deleted. Its folder is in the OneDrive recycle bin.' : 'Project removed. Its OneDrive folder was kept.', 'ok', 5000);
+      return ok;
+    }});
 }
 
 /* ---------- DOCUMENTS (shared folder browser) ---------- */
