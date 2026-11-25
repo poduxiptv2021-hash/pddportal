@@ -239,6 +239,14 @@
   .crumbs a:hover{text-decoration:underline;}
   .crumbs span.sep{color:var(--text-dim);}
   .back-btn{padding:6px 12px;margin-right:8px;font-size:13.5px;}
+  .year-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:18px;}
+  .year-tab{border:1px solid var(--line-2);background:#fff;color:var(--navy-2);border-radius:8px;padding:7px 14px;font-weight:700;font-size:14px;cursor:pointer;font-family:var(--font-head);}
+  .year-tab i{font-style:normal;font-weight:600;font-size:11px;background:var(--green-50);color:#3F6F06;border-radius:10px;padding:1px 7px;margin-left:4px;font-family:var(--font);}
+  .year-tab:hover{border-color:var(--teal);}
+  .year-tab.on{background:var(--navy-2);border-color:var(--navy-2);color:#fff;}
+  .year-tab.on i{background:var(--lime);color:var(--navy-2);}
+  .year-tab.add{border-style:dashed;color:var(--teal);}
+  .year-tab.del{border-color:transparent;background:none;color:var(--red);font-weight:600;margin-left:auto;}
   .stat-4{grid-template-columns:repeat(4,1fr);}
   .stat-btn{text-align:left;font:inherit;color:inherit;cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s;}
   .stat-btn:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(22,48,74,.10);}
@@ -686,6 +694,14 @@ function forgetFolderIds(){ for (const k of Object.keys(FID)) delete FID[k]; }
 
 /* ---------- portal data (projects, KPI, IPC, notes) = one JSON file in _system ---------- */
 let S = null, DATA_ID = null, DATA_ETAG = null;
+/* KPI lists are kept per financial year: S.kpiYears = {'2026':[sections], '2027':[...]} */
+const KY = () => UI.kpiYear || String(S.settings.fy);
+const KS = X => { X.kpiYears = X.kpiYears || {}; return X.kpiYears[KY()] = X.kpiYears[KY()] || []; };
+function migrateKPI(X){
+  if (!X.kpiYears) { X.kpiYears = {[String((X.settings && X.settings.fy) || '2026')]: X.kpiSections || []}; }
+  delete X.kpiSections;
+  return X;
+}
 async function loadData(){
   let it;
   try { it = await itemByPath(F.data()); }
@@ -693,7 +709,7 @@ async function loadData(){
     if (e.status !== 404) throw e;
     if (!can('manage')) throw new Error('The portal has not been set up yet. Ask a PDD Admin or Manager to sign in first.');
     await ensureFolder(F.system());
-    S = seed();
+    S = migrateKPI(seed());
     it = await graph(`${contentUrl(F.data())}?@microsoft.graph.conflictBehavior=fail`,
       {method:'PUT', headers:jsonHdr, body:JSON.stringify(S)});
     DATA_ID = it.id; DATA_ETAG = it.eTag;
@@ -703,7 +719,7 @@ async function loadData(){
   const r = it['@microsoft.graph.downloadUrl'] ? await fetch(it['@microsoft.graph.downloadUrl'], {cache:'no-store'})
                                                : await graph(`/drives/${DRIVE}/items/${it.id}/content`, {raw:true});
   S = await r.json(); DATA_ID = it.id; DATA_ETAG = it.eTag;
-  S.ipc = S.ipc || []; S.log = S.log || []; S.settings = S.settings || {fy:'2026', alertEmail:''};
+  S.ipc = S.ipc || []; S.log = S.log || []; S.settings = S.settings || {fy:'2026', alertEmail:''}; migrateKPI(S);
 }
 /* Every change goes through save(): it re-applies your change on the latest copy if someone else saved in between. */
 async function save(action, mutate){
@@ -1311,22 +1327,32 @@ function newFolder(path){
 
 /* ---------- KPI TRACKER ---------- */
 PAGES.kpi = function(){
-  const items = S.kpiSections.flatMap(s => s.items), n = st => items.filter(i => i.status === st).length;
+  const items = KS(S).flatMap(s => s.items), n = st => items.filter(i => i.status === st).length;
   const q = Math.floor(new Date().getMonth() / 3) + 1;
   const wTotal = items.reduce((a,i) => a + num(i.weight), 0), wDone = items.filter(i => i.status === 'Completed').reduce((a,i) => a + num(i.weight), 0);
   const editCol = can('edit');
+  const years = Object.keys(S.kpiYears || {}).sort().reverse(), cur = String(S.settings.fy), isPast = KY() < cur, isFuture = KY() > cur;
+  const yearBar = `<div class="year-bar"><span class="muted small" style="margin-right:4px">Financial year</span>
+    ${years.map(y => `<button class="year-tab ${y === KY() ? 'on' : ''}" data-act="kpi-year" data-y="${esc(y)}">FY${esc(y)}${y === cur ? ' <i>current</i>' : ''}</button>`).join('')}
+    ${can('manage') ? '<button class="year-tab add" data-act="kpi-new-year">+ New Year</button>' : ''}
+    ${can('admin') && KY() !== cur ? `<button class="year-tab del" data-act="kpi-del-year" title="Delete this year's KPI list">Delete FY${esc(KY())}</button>` : ''}</div>`;
+  const banner = isPast ? `<div class="warn-box">You are viewing <b>FY${esc(KY())}</b>, a past year. It is kept for reference. The current year is <a class="loc-link" data-act="kpi-year" data-y="${esc(cur)}">FY${esc(cur)}</a>.</div>`
+    : isFuture ? `<div class="info-box">You are preparing <b>FY${esc(KY())}</b>. ${can('admin') ? `When the new year starts, <a class="loc-link" data-act="kpi-make-current">make FY${esc(KY())} the current year</a>.` : 'An Admin can make it the current year when it starts.'}</div>` : '';
   $('#page-kpi').innerHTML = `
+    ${yearBar}
     <div class="kpi-top">
-      <div><h1>KPI Tracker</h1><div class="page-desc">FY${esc(S.settings.fy)} Property Development Department KPI · Quarterly alerts to PHB management</div></div>
+      <div><h1>KPI Tracker</h1><div class="page-desc">FY${esc(KY())} Property Development Department KPI · Quarterly alerts to PHB management</div></div>
       <div class="kpi-stats">
         <div><b class="green">${n('Completed')}</b>Completed</div><div><b class="blue">${n('In Progress')}</b>In Progress</div>
         <div><b class="amber">${n('At Risk')}</b>At Risk</div><div><b>${items.length}</b>Total</div>
         <div><b class="green">${+wDone.toFixed(2)}% / ${+wTotal.toFixed(2)}%</b>Weight achieved</div>
-        <button class="btn-outline" data-act="browse" data-path="${esc(F.kpi())}">KPI Evidence</button>
-        ${can('manage') ? `<button class="btn-amber" data-act="kpi-alert">Send Q${q} Alert</button><button class="btn-green" data-act="add-section">+ Add Section</button>` : ''}
+        <button class="btn-outline" data-act="kpi-evidence">FY${esc(KY())} Evidence</button>
+        ${can('manage') && KY() === String(S.settings.fy) ? `<button class="btn-amber" data-act="kpi-alert">Send Q${q} Alert</button><button class="btn-green" data-act="add-section">+ Add Section</button>` : ''}
       </div>
     </div>
-    ${S.kpiSections.map(s => {
+    ${banner}
+    ${KS(S).length ? '' : `<div class="empty-state">No KPIs for FY${esc(KY())} yet.${can('manage') ? ' Click <b>+ Add Section</b>, or use <b>+ New Year</b> to copy last year\'s KPIs.' : ''}</div>`}
+    ${KS(S).map(s => {
       const sw = s.items.reduce((a,i) => a + num(i.weight), 0);
       return `<div class="kpi-section">
       <div class="kpi-section-head"><span>${esc(s.name)} (${+num(s.weight)}%) <span class="muted small" style="font-weight:400">· items total ${+sw.toFixed(2)}%</span></span>
@@ -1341,16 +1367,16 @@ PAGES.kpi = function(){
 };
 function sectionForm(id){
   if (!guard('manage')) return;
-  const s = id ? S.kpiSections.find(x => x.id === id) : {name:'',weight:''};
+  const s = id ? KS(S).find(x => x.id === id) : {name:'',weight:''};
   openForm({title: id ? 'Edit KPI Section' : 'Add KPI Section',
     fields:[{key:'name',label:'Section name',value:s.name,required:true},{key:'weight',label:'Section weight (%)',type:'number',step:'0.1',value:s.weight}],
     onSubmit: v => { v.weight = num(v.weight);
-      return id ? save(`Edited KPI section: ${v.name}`, D => { const x = D.kpiSections.find(y => y.id === id); if (!x) return false; Object.assign(x, v); })
-                : save(`Added KPI section: ${v.name}`, D => { D.kpiSections.push({id:uid(), items:[], ...v}); }); }});
+      return id ? save(`Edited KPI section (FY${KY()}): ${v.name}`, D => { const x = KS(D).find(y => y.id === id); if (!x) return false; Object.assign(x, v); })
+                : save(`Added KPI section (FY${KY()}): ${v.name}`, D => { KS(D).push({id:uid(), items:[], ...v}); }); }});
 }
 function kpiForm(sid, id){
   if (!guard(id ? 'edit' : 'manage')) return;
-  const s = S.kpiSections.find(x => x.id === sid);
+  const s = KS(S).find(x => x.id === sid);
   const i = id ? s.items.find(x => x.id === id) : {kpi:'',base:'',stretch:'',weight:'',status:'Not Started',actual:'',remarks:''};
   const full = can('manage');
   openForm({title: id ? 'Update KPI' : `Add KPI — ${s.name}`,
@@ -1363,17 +1389,43 @@ function kpiForm(sid, id){
       {key:'remarks',label:'Remarks',type:'textarea',rows:3,value:i.remarks}
     ],
     onSubmit: v => { if ('weight' in v) v.weight = num(v.weight);
-      return save(id ? `Updated KPI: ${i.kpi} → ${v.status}` : `Added KPI: ${v.kpi}`, D => {
-        const ds = D.kpiSections.find(y => y.id === sid); if (!ds) return false;
+      return save(id ? `Updated KPI (FY${KY()}): ${i.kpi} → ${v.status}` : `Added KPI (FY${KY()}): ${v.kpi}`, D => {
+        const ds = KS(D).find(y => y.id === sid); if (!ds) return false;
         if (id) { const x = ds.items.find(y => y.id === id); if (!x) return false; Object.assign(x, v); }
         else ds.items.push({id:uid(), ...v});
       }); }});
 }
+function newKpiYear(){
+  if (!guard('manage')) return;
+  const years = Object.keys(S.kpiYears || {}).sort(), last = years[years.length - 1] || String(S.settings.fy);
+  openForm({title:'Start a new KPI year', submitLabel:'Create',
+    fields:[
+      {key:'year', label:'Financial year', type:'number', value:String(+last + 1), required:true, hint:'e.g. 2027'},
+      {key:'copy', label:'KPI list', type:'select', value:last,
+        options:[...years.slice().reverse().map(y => [y, `Copy KPIs, targets and weights from FY${y}`]), ['', 'Start with an empty list']]},
+      ...(can('admin') ? [{key:'current', label:'Make it the current year now?', type:'select', value:'no',
+        options:[['no','Not yet (prepare it in advance)'],['yes','Yes, it starts now (Dashboard and KPI open this year)']]}] : [])
+    ],
+    extraHtml:'<div class="muted small" style="margin-bottom:12px">Copied KPIs start fresh: status <b>Not Started</b>, Actual and Remarks empty. The previous year stays as it is for reference.</div>',
+    onSubmit: async v => {
+      const y = String(parseInt(v.year, 10));
+      if (!/^\d{4}$/.test(y)) return formError('Enter a 4-digit year, e.g. 2027.');
+      if ((S.kpiYears || {})[y]) return formError(`FY${y} already exists.`);
+      const ok = await save(`Started KPI year FY${y}` + (v.copy ? ` (copied from FY${v.copy})` : ''), D => {
+        D.kpiYears = D.kpiYears || {};
+        D.kpiYears[y] = v.copy ? (D.kpiYears[v.copy] || []).map(sec => ({...sec, id:uid(),
+          items:sec.items.map(i => ({...i, id:uid(), status:'Not Started', actual:'', remarks:''}))})) : [];
+        if (v.current === 'yes') D.settings.fy = y;
+      });
+      if (ok) { UI.kpiYear = y; render(); }
+      return ok;
+    }});
+}
 function kpiAlert(){
-  const q = Math.floor(new Date().getMonth() / 3) + 1, items = S.kpiSections.flatMap(s => s.items.map(i => ({...i, section:s.name})));
+  const q = Math.floor(new Date().getMonth() / 3) + 1, items = KS(S).flatMap(s => s.items.map(i => ({...i, section:s.name})));
   const grp = st => items.filter(i => i.status === st);
   const list = arr => arr.length ? arr.map(i => `- [${i.section}] ${i.kpi} (${i.weight}%)${i.actual?' — Actual: '+i.actual:''}${i.remarks?' — '+i.remarks:''}`).join('\n') : '- None';
-  const body = `PDD KPI Status Update — Q${q} FY${S.settings.fy}
+  const body = `PDD KPI Status Update — Q${q} FY${KY()}
 
 Summary: ${grp('Completed').length} completed, ${grp('In Progress').length} in progress, ${grp('At Risk').length} at risk, ${grp('Not Started').length} not started (total ${items.length}).
 
@@ -1391,7 +1443,7 @@ Prepared by ${ME.name} via PDD Portal on ${fmtDate(new Date().toISOString())}.`;
     extraHtml:'<div class="muted small" style="margin-bottom:12px">This opens Outlook with the message ready. Review it and press Send there.</div>',
     fields:[
       {key:'to',label:'To (emails, comma-separated)',value:S.settings.alertEmail,required:true},
-      {key:'subject',label:'Subject',value:`PDD KPI Status — Q${q} FY${S.settings.fy}`},
+      {key:'subject',label:'Subject',value:`PDD KPI Status — Q${q} FY${KY()}`},
       {key:'body',label:'Message',type:'textarea',rows:14,value:body}
     ],
     onSubmit: async v => {
@@ -1543,7 +1595,7 @@ PAGES.admin = function(){
 function settingsForm(){
   if (!guard('admin')) return;
   openForm({title:'Settings',
-    fields:[{key:'fy',label:'Financial year',value:S.settings.fy,required:true},
+    fields:[{key:'fy',label:'Current financial year',value:S.settings.fy,required:true,hint:'The Dashboard and KPI Tracker open this year by default. Past years stay in the KPI Tracker.'},
             {key:'alertEmail',label:'Default KPI alert recipients',value:S.settings.alertEmail,hint:'Comma-separated emails of PHB management'}],
     onSubmit: v => save('Updated settings', D => { Object.assign(D.settings, v); })});
 }
@@ -1589,14 +1641,26 @@ const ACT = {
   'del-item': d => deleteItem(d),
   'toggle': d => { UI.open[d.key] = !UI.open[d.key]; render(); },
   'kpi-alert': kpiAlert,
+  'kpi-year': d => { UI.kpiYear = d.y; render(); },
+  'kpi-new-year': newKpiYear,
+  'kpi-make-current': async d => { if (!guard('admin')) return; const y = KY();
+      if (confirm(`Make FY${y} the current financial year?\n\nThe Dashboard and KPI Tracker will open FY${y} by default. FY${S.settings.fy} stays available as a past year.`))
+        if (await save(`Set current financial year to FY${y}`, D => { D.settings.fy = y; })) { UI.kpiYear = null; render(); } },
+  'kpi-del-year': async d => { if (!guard('admin')) return; const y = KY();
+      if (y === String(S.settings.fy)) return toast('The current year cannot be deleted.', 'err');
+      if (prompt(`Delete the whole FY${y} KPI list (${KS(S).length} section(s))?\nEvidence files in OneDrive are NOT deleted.\n\nType ${y} to confirm.`) !== y) return;
+      if (await save(`Deleted KPI year FY${y}`, D => { delete D.kpiYears[y]; })) { UI.kpiYear = null; render(); } },
+  'kpi-evidence': async () => { const p = `${F.kpi()}/FY${KY()}`;
+      try { if (can('upload')) await ensureFolder(p); } catch(e) {}
+      UI.browsePath = p; UI.searchQ = ''; UI.searchType = 'all'; invalidate(F.kpi()); showPage('documents'); },
   'add-section': () => sectionForm(),
   'edit-section': d => sectionForm(d.id),
-  'del-section': d => { if (!guard('manage')) return; const s = S.kpiSections.find(x => x.id === d.id);
-      if (confirm(`Delete section "${s.name}" and its ${s.items.length} KPI(s)?`)) save(`Deleted KPI section: ${s.name}`, D => { D.kpiSections = D.kpiSections.filter(x => x.id !== d.id); }); },
+  'del-section': d => { if (!guard('manage')) return; const s = KS(S).find(x => x.id === d.id);
+      if (confirm(`Delete section "${s.name}" and its ${s.items.length} KPI(s)?`)) save(`Deleted KPI section: ${s.name}`, D => { D.kpiYears[KY()] = KS(D).filter(x => x.id !== d.id); }); },
   'add-kpi': d => kpiForm(d.id),
   'edit-kpi': d => kpiForm(d.sid, d.id),
-  'del-kpi': d => { if (!guard('manage')) return; const s = S.kpiSections.find(x => x.id === d.sid), i = s.items.find(x => x.id === d.id);
-      if (confirm(`Delete KPI "${i.kpi}"?`)) save(`Deleted KPI: ${i.kpi}`, D => { const x = D.kpiSections.find(y => y.id === d.sid); if (x) x.items = x.items.filter(y => y.id !== d.id); }); },
+  'del-kpi': d => { if (!guard('manage')) return; const s = KS(S).find(x => x.id === d.sid), i = s.items.find(x => x.id === d.id);
+      if (confirm(`Delete KPI "${i.kpi}"?`)) save(`Deleted KPI: ${i.kpi}`, D => { const x = KS(D).find(y => y.id === d.sid); if (x) x.items = x.items.filter(y => y.id !== d.id); }); },
   'report-tab': d => { UI.reportTab = d.tab; render(); },
   'add-period': addPeriod,
   'folder-tab': d => { UI.folderTab[d.id] = d.tab; render(); },
