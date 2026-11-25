@@ -239,6 +239,25 @@
   .crumbs a:hover{text-decoration:underline;}
   .crumbs span.sep{color:var(--text-dim);}
   .back-btn{padding:6px 12px;margin-right:8px;font-size:13.5px;}
+  .search-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
+  .search-box{flex:1;max-width:640px;min-width:260px;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line-2);border-radius:10px;padding:0 12px;transition:border-color .15s,box-shadow .15s;}
+  .search-box:focus-within{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,130,122,.15);}
+  .search-box svg{width:18px;height:18px;color:var(--text-dim);flex-shrink:0;}
+  .search-box input{flex:1;border:none;outline:none;padding:12px 0;font-size:15px;background:transparent;color:var(--text);}
+  .search-box kbd{font-family:inherit;font-size:12px;color:var(--text-dim);border:1px solid var(--line-2);border-radius:5px;padding:1px 7px;}
+  .search-x{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:15px;padding:4px;}
+  .search-x:hover{color:var(--red);}
+  .scope-sel{padding:11px 12px;border-radius:10px;border:1px solid var(--line-2);background:#fff;color:var(--navy-2);font-size:14px;font-weight:600;}
+  .chip-row{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px;}
+  .chip{border:1px solid var(--line-2);background:#fff;color:var(--navy-2);border-radius:20px;padding:5px 12px;font-size:13px;font-weight:600;cursor:pointer;}
+  .chip span{color:var(--text-dim);font-weight:500;margin-left:2px;}
+  .chip:hover{border-color:var(--teal);}
+  .chip.on{background:var(--teal);border-color:var(--teal);color:#fff;}
+  .chip.on span{color:#D8F0EC;}
+  .search-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0 4px;font-size:14.5px;}
+  #search-results .chip-row{margin:6px 0 4px;}
+  mark{background:#E8F29A;color:inherit;border-radius:3px;padding:0 1px;}
+  .in-file{background:#E4F3F1;color:#006C66;border-radius:4px;padding:0 6px;font-weight:600;}
   .fr-main{display:flex;gap:12px;align-items:center;min-width:0;}
   .file-link{color:var(--navy-2);font-weight:700;text-decoration:none;cursor:pointer;}
   .file-link:hover{color:var(--teal);text-decoration:underline;}
@@ -630,6 +649,7 @@ async function fetchFolder(path){
   if (FC[path] === c) render();
 }
 function invalidate(...paths){
+  if (typeof IDX !== 'undefined') IDX.at = 0;
   for (const p of paths) for (const k of Object.keys(FC)) if (k === p || k.startsWith(p + '/')) delete FC[k];
 }
 function forgetFolderIds(){ for (const k of Object.keys(FID)) delete FID[k]; }
@@ -694,7 +714,7 @@ async function ensureProjectFolders(folder){
    3. APP STATE, ROLES, NAVIGATION
    ===================================================================== */
 let ME = null;
-const UI = { page:'dashboard', browsePath:null, search:null, searchQ:'', reportTab:'monthly', open:{}, folderTab:{} };
+const UI = { page:'dashboard', browsePath:null, searchQ:'', searchType:'all', searchScope:'all', content:null, reportTab:'monthly', open:{}, folderTab:{} };
 const can = p => !!ME && (PERMS[ME.role] || []).includes(p);
 const proj = id => S.projects.find(p => p.id === id);
 const projName = id => (proj(id) || {}).name || '';
@@ -765,7 +785,7 @@ function readLoc(){
 }
 window.addEventListener('popstate', () => {
   if (!ME || !S) return;
-  readLoc(); UI.browsePath = UI.pendingRel ? F.root() + '/' + UI.pendingRel : F.root(); UI.search = null; UI.searchQ = '';
+  readLoc(); UI.browsePath = UI.pendingRel ? F.root() + '/' + UI.pendingRel : F.root(); UI.searchQ = ''; UI.searchType = 'all';
   showPage(UI.page, true);
 });
 function showPage(name, fromHistory){
@@ -1048,12 +1068,8 @@ PAGES.documents = function(){
   const crumbs = [`<a data-act="browse" data-path="${esc(F.root())}">${esc(F.root())}</a>`,
     ...segs.map((s,i) => `<span class="sep">›</span><a data-act="browse" data-path="${esc(F.root() + '/' + segs.slice(0,i+1).join('/'))}">${esc(s)}</a>`)].join('');
   let body;
-  if (UI.search) {
-    body = `<div class="page-header-row" style="margin-bottom:10px"><div class="muted">${UI.search.length} result(s) for "<b>${esc(UI.searchQ)}</b>"</div>
-      <button class="btn-sm" data-act="clear-search">✕ Clear search</button></div>` +
-      (UI.search.map(r => `<div class="file-row"><div class="fr-main">${fileBadge(r.item)}<div>${r.item.folder ? `<a class="file-link" data-act="browse" data-path="${esc(r.path + '/' + r.item.name)}">${esc(r.item.name)}</a>` : itemName(r.item)}
-        <div class="muted small">in <a class="loc-link" data-act="browse" data-path="${esc(r.path)}">${esc(relPath(r.path) || F.root())}</a> · ${fileMeta(r.item)}</div></div></div>
-        <div class="actions">${itemActions(r.item, r.path)}</div></div>`).join('') || '<div class="muted pad">Nothing found.</div>');
+  if (searching()) {
+    body = `<div id="search-results">${searchResultsHtml()}</div>`;
   } else if (st.items && !st.item && !st.loading) {
     body = `<div class="empty-state">This folder does not exist yet in OneDrive.${can('admin') ? '<br><br><button class="btn-green" data-act="setup-folders">Create the PDD folders</button>' : ''}</div>`;
   } else {
@@ -1066,34 +1082,130 @@ PAGES.documents = function(){
         ${st.item ? `<a class="btn-outline" style="text-decoration:none" href="${esc(st.item.webUrl)}" target="_blank" rel="noopener">Open in OneDrive ↗</a>` : ''}
         <button class="btn-outline" data-act="refresh" data-path="${esc(path)}" title="Refresh">⟳</button>
       </div></div>
-    <form class="btn-row" id="search-form" style="margin-bottom:6px">
-      <input class="search" id="doc-search" style="margin:0" placeholder="Search all PDD files…" value="${esc(UI.searchQ)}">
-      <button class="btn-outline" type="submit">Search</button></form>
+    <div class="search-bar">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="doc-search" autocomplete="off" placeholder="Search file and folder names, or text inside documents…" value="${esc(UI.searchQ)}">
+        ${UI.searchQ ? '<button type="button" class="search-x" data-act="clear-search" title="Clear (Esc)">✕</button>' : '<kbd title="Press / to search from anywhere">/</kbd>'}
+      </div>
+      ${atRoot ? '' : `<select id="search-scope" class="scope-sel" title="Where to search">
+        <option value="all" ${UI.searchScope==='all'?'selected':''}>All PDD files</option>
+        <option value="here" ${UI.searchScope==='here'?'selected':''}>Only in “${esc(segs[segs.length-1])}”</option></select>`}
+    </div>
+    ${searching() ? '' : `<div class="chip-row">${TYPES.slice(1).map(([k,l]) => `<button class="chip" data-act="search-type" data-type="${k}">${l}</button>`).join('')}<span class="muted small" style="align-self:center">← show all files of one type</span></div>`}
     <div class="crumbs" style="margin-top:14px">${atRoot ? '' : `<button class="btn-outline back-btn" data-act="browse" data-path="${esc(parentOf(path))}">← Back</button>`}${crumbs}</div>
-    <div class="kpi-section drop-zone" style="padding:4px 20px" ${can('upload') && !UI.search ? `data-drop-path="${esc(path)}"` : ''}>${body}</div>
-    ${can('upload') && !UI.search ? '<div class="muted small" style="margin-top:8px">Tip: drag files from your computer onto the list to upload them here.</div>' : ''}`;
-  $('#search-form').addEventListener('submit', e => { e.preventDefault(); searchFiles($('#doc-search').value.trim()); });
+    <div class="kpi-section drop-zone" style="padding:4px 20px" ${can('upload') && !searching() ? `data-drop-path="${esc(path)}"` : ''}>${body}</div>
+    ${can('upload') && !searching() ? '<div class="muted small" style="margin-top:8px">Tip: drag files from your computer onto the list to upload them here.</div>' : ''}`;
+  const inp = $('#doc-search');
+  inp.addEventListener('input', () => {
+    clearTimeout(SRCH.t); SRCH.t = setTimeout(() => setSearch(inp.value), 120);
+    clearTimeout(SRCH.c); SRCH.c = setTimeout(() => contentSearch(inp.value.trim()), 500);
+  });
+  inp.addEventListener('keydown', e => { if (e.key === 'Escape' && (inp.value || searching())) { e.stopPropagation(); inp.value = ''; ACT['clear-search'](); } });
+  const sc = $('#search-scope'); if (sc) sc.addEventListener('change', () => { UI.searchScope = sc.value; refreshSearch(); });
 };
-async function searchFiles(q){
-  UI.searchQ = q;
-  if (!q) { UI.search = null; render(); return; }
-  toast('Searching…', '', 60000);
-  const needle = q.toLowerCase(), out = [];
-  try {
-    let level = [{id:ROOT_ID, path:F.root()}], seen = 0;
-    while (level.length && seen < 5000) {
-      const kids = await Promise.all(level.map(f => listChildren(f.id).then(items => items.map(item => ({item, path:f.path})))));
-      level = [];
-      for (const {item, path} of kids.flat()) {
-        seen++;
-        if (item.name === '_system') continue;
-        if (item.name.toLowerCase().includes(needle)) out.push({item, path});
-        if (item.folder) level.push({id:item.id, path:path + '/' + item.name});
-      }
-    }
-  } catch(e) { toast('Search failed: ' + e.message, 'err'); return; }
-  UI.search = out.slice(0, 300); toast(`${out.length} result(s).`, 'ok'); render();
+/* ---------- SEARCH: instant, as you type ----------
+   1. Names: a list of every file/folder in PDD Portal is built once (refreshed every few minutes
+      or after any upload/rename/delete), so name search is instant.
+   2. Inside documents: OneDrive's own search looks for the words inside Word/Excel/PDF files. */
+const IDX = {items:null, at:0, building:null};
+const SRCH = {t:null, c:null, seq:0};
+const TYPES = [['all','All'],['folder','Folders'],['pdf','PDF'],['doc','Word'],['xls','Excel'],['ppt','PowerPoint'],['img','Images'],['other','Other']];
+function typeOf(it){
+  if (it.folder) return 'folder';
+  const e = (it.name.split('.').pop() || '').toLowerCase();
+  return e === 'pdf' ? 'pdf' : ['doc','docx','rtf','txt'].includes(e) ? 'doc' : ['xls','xlsx','xlsm','csv'].includes(e) ? 'xls'
+       : ['ppt','pptx'].includes(e) ? 'ppt' : ['png','jpg','jpeg','gif','webp','heic','bmp'].includes(e) ? 'img' : 'other';
 }
+const searching = () => !!UI.searchQ.trim() || UI.searchType !== 'all';
+function setSearch(q){ const was = searching(); UI.searchQ = q; was !== searching() ? render() : refreshSearch(); }
+function refreshSearch(){ const el = document.getElementById('search-results'); if (el) el.innerHTML = searchResultsHtml(); }
+function buildIndex(){
+  if (IDX.building) return IDX.building;
+  IDX.building = (async () => {
+    const out = []; let level = [{id:ROOT_ID, path:F.root()}];
+    while (level.length && out.length < 20000) {
+      const next = [];
+      for (let i = 0; i < level.length; i += 6) {           // 6 folders at a time, to stay friendly with OneDrive
+        const batch = await Promise.all(level.slice(i, i + 6).map(f => listChildren(f.id).then(items => items.map(item => ({item, path:f.path})))));
+        for (const r of batch.flat()) {
+          if (r.path === F.root() && r.item.name === '_system') continue;
+          out.push(r);
+          if (r.item.folder) next.push({id:r.item.id, path:r.path + '/' + r.item.name});
+        }
+      }
+      level = next;
+    }
+    IDX.items = out; IDX.at = Date.now();
+  })().catch(e => toast('Search could not read all folders: ' + e.message, 'err')).finally(() => { IDX.building = null; refreshSearch(); });
+  return IDX.building;
+}
+async function contentSearch(q){
+  const my = ++SRCH.seq;
+  if (q.length < 3) { UI.content = null; return; }
+  UI.content = {q, hits:null}; refreshSearch();
+  try {
+    const j = await graph(`/drives/${DRIVE}/items/${ROOT_ID}/search(q='${encodeURIComponent(q.replace(/'/g, "''"))}')?$top=100`);
+    if (my === SRCH.seq) UI.content = {q, hits:j.value || []};
+  } catch(e) { if (my === SRCH.seq) UI.content = {q, hits:[], failed:true}; }
+  if (my === SRCH.seq) refreshSearch();
+}
+function hl(text, words){
+  const low = text.toLowerCase(), on = new Array(text.length).fill(false);
+  for (const w of words) for (let i = low.indexOf(w); i >= 0; i = low.indexOf(w, i + 1)) for (let k = i; k < i + w.length; k++) on[k] = true;
+  let out = '', open = false;
+  for (let i = 0; i < text.length; i++) { if (on[i] !== open) { out += on[i] ? '<mark>' : '</mark>'; open = on[i]; } out += esc(text[i]); }
+  return out + (open ? '</mark>' : '');
+}
+function searchResultsHtml(){
+  if (!IDX.items || Date.now() - IDX.at > 180000) buildIndex();
+  if (!IDX.items) return '<div class="muted pad">Preparing search… this takes a few seconds the first time.</div>';
+  const q = UI.searchQ.trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean);
+  const scope = UI.searchScope === 'here' && UI.browsePath && UI.browsePath !== F.root() ? UI.browsePath : null;
+  const inScope = p => !scope || p === scope || p.startsWith(scope + '/');
+  // 1. name / location matches
+  let hits = IDX.items.filter(r => inScope(r.path) && words.every(w => (r.item.name + ' ' + relPath(r.path)).toLowerCase().includes(w)))
+    .map(r => { const n = r.item.name.toLowerCase();
+      return {...r, score: !q ? 3 : n.startsWith(q) ? 0 : n.includes(q) ? 1 : words.every(w => n.includes(w)) ? 2 : 3}; });
+  // 2. text found inside documents (OneDrive search)
+  const cs = UI.content && UI.content.q.toLowerCase() === q ? UI.content : null;
+  if (cs && cs.hits) {
+    const pathById = new Map([[ROOT_ID, F.root()], ...IDX.items.filter(r => r.item.folder).map(r => [r.item.id, r.path + '/' + r.item.name])]);
+    const seen = new Set(hits.map(h => h.item.id));
+    for (const it of cs.hits) {
+      const p = it.parentReference && pathById.get(it.parentReference.id);
+      if (!p || seen.has(it.id) || !inScope(p)) continue;
+      const known = IDX.items.find(r => r.item.id === it.id);
+      hits.push({item: known ? known.item : it, path:p, score:4, inside:true}); seen.add(it.id);
+    }
+  }
+  const counts = {}; for (const h of hits) { const t = typeOf(h.item); counts[t] = (counts[t] || 0) + 1; }
+  if (UI.searchType !== 'all') hits = hits.filter(h => typeOf(h.item) === UI.searchType);
+  hits.sort((a,b) => a.score - b.score || String(b.item.lastModifiedDateTime).localeCompare(String(a.item.lastModifiedDateTime)));
+  const total = Object.values(counts).reduce((a,b) => a + b, 0);
+  const chips = TYPES.filter(([k]) => k === 'all' || counts[k] || UI.searchType === k).map(([k,l]) =>
+    `<button class="chip ${UI.searchType === k ? 'on' : ''}" data-act="search-type" data-type="${k}">${l} <span>${k === 'all' ? total : counts[k] || 0}</span></button>`).join('');
+  const what = q ? `for “<b>${esc(UI.searchQ.trim())}</b>”` : `· ${esc((TYPES.find(t => t[0] === UI.searchType) || [,''])[1])} files`;
+  const status = cs && cs.hits === null ? '<span class="muted small">· searching inside documents…</span>'
+               : q.length >= 3 && cs && cs.failed ? '<span class="muted small">· search inside documents is not available right now</span>' : '';
+  const shown = hits.slice(0, 200);
+  const row = r => `<div class="file-row"><div class="fr-main">${fileBadge(r.item)}<div>${r.item.folder
+      ? `<a class="file-link" data-act="browse" data-path="${esc(r.path + '/' + r.item.name)}">${hl(r.item.name, words)}</a>`
+      : `<a class="file-link" href="${esc(r.item.webUrl)}" target="_blank" rel="noopener">${hl(r.item.name, words)}</a>`}
+      <div class="muted small">${r.inside ? '<span class="in-file">Text found inside</span> · ' : ''}in <a class="loc-link" data-act="browse" data-path="${esc(r.path)}">${hl(relPath(r.path) || F.root(), words)}</a>${r.item.size != null || r.item.folder ? ' · ' + fileMeta(r.item) : ''}</div></div></div>
+      <div class="actions">${itemActions(r.item, r.path)}</div></div>`;
+  return `<div class="search-head"><div><b>${hits.length}</b> result${hits.length === 1 ? '' : 's'} ${what}${scope ? ` in “${esc(scope.split('/').pop())}”` : ''} ${status}</div>
+      <button class="btn-sm" data-act="clear-search">✕ Clear</button></div>
+    <div class="chip-row">${chips}</div>
+    ${shown.map(row).join('') || `<div class="muted pad">Nothing found. Try fewer or different words${scope ? ', or search “All PDD files”' : ''}.</div>`}
+    ${hits.length > shown.length ? `<div class="muted small pad">Showing the first ${shown.length}. Type more words to narrow it down.</div>` : ''}`;
+}
+// press "/" anywhere to jump to search
+document.addEventListener('keydown', e => {
+  if (e.key !== '/' || !ME || !S || /INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '') || !$('#modal').classList.contains('hidden')) return;
+  e.preventDefault(); if (UI.page !== 'documents') showPage('documents');
+  const i = $('#doc-search'); if (i) { i.focus(); i.select(); }
+});
 function newFolder(path){
   if (!guard('upload')) return;
   openForm({title:'New Folder', fields:[{key:'name',label:'Folder name',required:true}], submitLabel:'Create',
@@ -1367,8 +1479,9 @@ const ACT = {
   'del-project': d => deleteProject(d.id),
   'add-note': d => addNote(d.id),
   'open-folder': d => { UI.open['proj:' + d.id] = true; UI.folderTab[d.id] = 'docs'; showPage('folders'); },
-  'browse': d => { UI.browsePath = d.path; UI.search = null; UI.searchQ = ''; if (UI.page !== 'documents') return showPage('documents'); pushLoc(); render(); },
-  'clear-search': () => { UI.search = null; UI.searchQ = ''; render(); },
+  'browse': d => { UI.browsePath = d.path; UI.searchQ = ''; UI.searchType = 'all'; if (UI.page !== 'documents') return showPage('documents'); pushLoc(); render(); },
+  'clear-search': () => { UI.searchQ = ''; UI.searchType = 'all'; render(); const i = $('#doc-search'); if (i) i.focus(); },
+  'search-type': d => { const was = searching(); UI.searchType = UI.searchType === d.type && d.type !== 'all' ? 'all' : d.type; was !== searching() ? render() : refreshSearch(); },
   'refresh': d => { invalidate(d.path); render(); },
   'upload-to': d => { if (guard('upload')) pickFiles(files => uploadTo(d.path, files)); },
   'new-folder': d => newFolder(d.path),
