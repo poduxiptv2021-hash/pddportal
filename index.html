@@ -247,6 +247,25 @@
   .year-tab.on i{background:var(--lime);color:var(--navy-2);}
   .year-tab.add{border-style:dashed;color:var(--teal);}
   .year-tab.del{border-color:transparent;background:none;color:var(--red);font-weight:600;margin-left:auto;}
+  .kpi-summary{display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin:18px 0 20px;}
+  .kpi-table td.actions{white-space:nowrap;}
+  .kpi-table td.actions > *{margin:0 4px 4px 0;}
+  .kstats{display:flex;flex:2;min-width:420px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;}
+  .kstat{flex:1;background:none;border:none;border-right:1px solid var(--line);padding:14px 10px;cursor:pointer;font:inherit;font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;text-align:center;}
+  .kstat:last-child{border-right:none;}
+  .kstat b{display:block;font-size:26px;color:var(--navy-2);font-family:var(--font-head);letter-spacing:0;}
+  .kstat:hover{background:#FAFCF9;}
+  .kstat.sel{background:#E9F5F3;box-shadow:inset 0 -3px 0 var(--teal);}
+  .kweight{flex:1;min-width:260px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px 18px;display:flex;flex-direction:column;justify-content:center;gap:6px;}
+  .kw-top{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);}
+  .kw-top b{font-size:22px;color:var(--green-700);font-family:var(--font-head);text-transform:none;letter-spacing:0;}
+  .kw-top b .muted{font-size:14px;font-weight:500;}
+  .kpi-table{table-layout:fixed;}
+  .kpi-table td{word-wrap:break-word;}
+  .kname{color:var(--navy-2);font-weight:600;}
+  .kupd{font-size:11.5px;color:var(--text-dim);margin-top:4px;}
+  .wwarn{display:inline-block;margin-left:8px;font-size:12px;font-weight:600;background:#FBEFD7;color:#8A5A00;border-radius:20px;padding:2px 10px;font-family:var(--font);letter-spacing:0;}
+  .remind{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
   .stat-4{grid-template-columns:repeat(4,1fr);}
   .stat-btn{text-align:left;font:inherit;color:inherit;cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s;}
   .stat-btn:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(22,48,74,.10);}
@@ -1083,6 +1102,24 @@ PAGES.dashboard = function(){
         || '<tr><td class="muted">No activity yet.</td></tr>'}
     </table></div></div>`;
 };
+function downloadCSV(name, head, rows){
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const csv = '\ufeff' + [head, ...rows].map(r => r.map(q).join(',')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  const a = document.createElement('a'); a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+function exportKPI(){
+  const rows = KS(S).flatMap(s => s.items.map(i => [s.name, num(s.weight), i.kpi, i.base, i.stretch, num(i.weight), i.status, i.actual, i.remarks, i.updatedBy || '', i.updatedAt ? fmtDate(i.updatedAt) : '']));
+  downloadCSV(`PDD KPI FY${KY()} ${new Date().toISOString().slice(0,10)}.csv`,
+    ['Section','Section weight %','KPI','Base target','Stretch target','Weight %','Status','Actual','Remarks','Updated by','Updated on'], rows);
+}
+function exportIPC(pid){
+  const p = proj(pid), rows = S.ipc.filter(i => i.projectId === pid).sort((a,b) => a.party.localeCompare(b.party) || (a.date||'').localeCompare(b.date||''))
+    .map(i => [i.party, i.no, i.date, num(i.claimed), num(i.certified), num(i.claimed) - num(i.certified), i.status, i.remarks]);
+  downloadCSV(`IPC ${safeName(p.name)} ${new Date().toISOString().slice(0,10)}.csv`,
+    ['Party','IPC No.','Date','Amount claimed (RM)','Amount certified (RM)','Difference (RM)','Status','Remarks'], rows);
+}
 function exportProjects(){
   const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
   const head = ['Project','Type','GDV','Status','Progress %','Current status','Next target','Target date','Days to target','Last updated','Latest note','Latest note by'];
@@ -1331,6 +1368,8 @@ function newFolder(path){
 /* ---------- KPI TRACKER ---------- */
 PAGES.kpi = function(){
   const items = KS(S).flatMap(s => s.items), n = st => items.filter(i => i.status === st).length;
+  const kf = UI.kpiFilter || 'all', show = i => kf === 'all' || i.status === kf;
+  const kstat = (val, cls, label, key) => `<button class="kstat ${kf === key ? 'sel' : ''}" data-act="kpi-filter" data-f="${key}" title="${key === 'all' ? 'Show all KPIs' : 'Show only ' + label}"><b class="${cls}">${val}</b>${label}</button>`;
   const q = Math.floor(new Date().getMonth() / 3) + 1;
   const wTotal = items.reduce((a,i) => a + num(i.weight), 0), wDone = items.filter(i => i.status === 'Completed').reduce((a,i) => a + num(i.weight), 0);
   const editCol = can('edit');
@@ -1343,27 +1382,35 @@ PAGES.kpi = function(){
     : isFuture ? `<div class="info-box">You are preparing <b>FY${esc(KY())}</b>. ${can('admin') ? `When the new year starts, <a class="loc-link" data-act="kpi-make-current">make FY${esc(KY())} the current year</a>.` : 'An Admin can make it the current year when it starts.'}</div>` : '';
   $('#page-kpi').innerHTML = `
     ${yearBar}
-    <div class="kpi-top">
-      <div><h1>KPI Tracker</h1><div class="page-desc">FY${esc(KY())} Property Development Department KPI · Quarterly alerts to PHB management</div></div>
-      <div class="kpi-stats">
-        <div><b class="green">${n('Completed')}</b>Completed</div><div><b class="blue">${n('In Progress')}</b>In Progress</div>
-        <div><b class="amber">${n('At Risk')}</b>At Risk</div><div><b>${items.length}</b>Total</div>
-        <div><b class="green">${+wDone.toFixed(2)}% / ${+wTotal.toFixed(2)}%</b>Weight achieved</div>
+    <div class="page-header-row"><div><h1>KPI Tracker</h1><div class="page-desc">FY${esc(KY())} Property Development Department KPI · Quarterly alerts to PHB management</div></div>
+      <div class="btn-row">
         <button class="btn-outline" data-act="kpi-evidence">FY${esc(KY())} Evidence</button>
-        ${can('manage') && KY() === String(S.settings.fy) ? `<button class="btn-amber" data-act="kpi-alert">Send Q${q} Alert</button><button class="btn-green" data-act="add-section">+ Add Section</button>` : ''}
-      </div>
+        <button class="btn-outline" data-act="export-kpi">Export to Excel</button>
+        ${can('manage') && KY() === String(S.settings.fy) ? `<button class="btn-amber" data-act="kpi-alert">Send Q${q} Alert</button>` : ''}
+        ${can('manage') ? '<button class="btn-green" data-act="add-section">+ Add Section</button>' : ''}
+      </div></div>
+    <div class="kpi-summary">
+      <div class="kstats">${kstat(items.length,'','Total','all')}${kstat(n('Completed'),'green','Completed','Completed')}${kstat(n('In Progress'),'blue','In Progress','In Progress')}${kstat(n('At Risk'),'amber','At Risk','At Risk')}${kstat(n('Not Started'),'','Not Started','Not Started')}</div>
+      <div class="kweight"><div class="kw-top"><span>Weight achieved</span><b>${+wDone.toFixed(2)}% <span class="muted">of ${+wTotal.toFixed(2)}%</span></b></div>
+        <div class="bar"><i style="width:${wTotal ? Math.min(100, wDone / wTotal * 100) : 0}%;background:linear-gradient(90deg,var(--teal),var(--green-600))"></i></div>
+        <div class="muted small">${wTotal ? Math.round(wDone / wTotal * 100) : 0}% of the total weight is completed</div></div>
     </div>
+    ${kf !== 'all' ? `<div class="section-label">Showing: <span class="filter-tag">${esc(kf)} <button data-act="kpi-filter" data-f="all" title="Show all">✕</button></span></div>` : ''}
     ${banner}
     ${KS(S).length ? '' : `<div class="empty-state">No KPIs for FY${esc(KY())} yet.${can('manage') ? ' Click <b>+ Add Section</b>, or use <b>+ New Year</b> to copy last year\'s KPIs.' : ''}</div>`}
     ${KS(S).map(s => {
-      const sw = s.items.reduce((a,i) => a + num(i.weight), 0);
+      const sw = s.items.reduce((a,i) => a + num(i.weight), 0), rows = s.items.filter(show);
+      if (kf !== 'all' && !rows.length) return '';
+      const off = num(s.weight) && Math.abs(sw - num(s.weight)) > 0.001;
       return `<div class="kpi-section">
-      <div class="kpi-section-head"><span>${esc(s.name)} (${+num(s.weight)}%) <span class="muted small" style="font-weight:400">· items total ${+sw.toFixed(2)}%</span></span>
+      <div class="kpi-section-head"><span>${esc(s.name)} (${+num(s.weight)}%) <span class="muted small" style="font-weight:400">· items total ${+sw.toFixed(2)}%</span>
+        ${off ? `<span class="wwarn" title="The KPI weights in this section do not add up to the section weight">⚠ ${sw < num(s.weight) ? +(num(s.weight) - sw).toFixed(2) + '% unassigned' : +(sw - num(s.weight)).toFixed(2) + '% over'}</span>` : ''}</span>
         <span class="btn-row">${can('manage') ? `<button class="btn-sm green" data-act="add-kpi" data-id="${s.id}">+ KPI</button><button class="btn-sm" data-act="edit-section" data-id="${s.id}">Edit</button><button class="btn-sm red" data-act="del-section" data-id="${s.id}">Delete</button>` : ''}</span></div>
-      <div class="table-wrap"><table>
+      <div class="table-wrap"><table class="kpi-table">
+        <colgroup><col style="width:20%"><col style="width:14%"><col style="width:15%"><col style="width:7%"><col style="width:13%"><col style="width:10%"><col style="width:${editCol ? 10 : 21}%">${editCol ? '<col style="width:150px">' : ''}</colgroup>
         <tr><th>KPI</th><th>Base Target</th><th>Stretch Target</th><th>Weight</th><th>Status</th><th>Actual</th><th>Remarks</th>${editCol?'<th></th>':''}</tr>
-        ${s.items.map(i => `<tr><td>${esc(i.kpi)}</td><td>${esc(i.base)}</td><td>${esc(i.stretch)}</td><td>${+num(i.weight)}%</td>
-          <td><span class="status-pill ${pillCls(i.status)}">${esc(i.status)}</span></td><td>${esc(i.actual)||'—'}</td><td>${esc(i.remarks)||'—'}</td>
+        ${rows.map(i => `<tr><td><b class="kname">${esc(i.kpi)}</b></td><td>${esc(i.base)}</td><td>${esc(i.stretch)}</td><td>${+num(i.weight)}%</td>
+          <td><span class="status-pill ${pillCls(i.status)}">${esc(i.status)}</span>${i.updatedAt ? `<div class="kupd" title="Last updated">${esc(i.updatedBy || '')} · ${fmtDate(i.updatedAt)}</div>` : ''}</td><td>${esc(i.actual)||'—'}</td><td>${esc(i.remarks)||'—'}</td>
           ${editCol ? `<td class="actions"><button class="btn-sm" data-act="edit-kpi" data-sid="${s.id}" data-id="${i.id}">Update</button>${can('manage')?`<button class="btn-sm red" data-act="del-kpi" data-sid="${s.id}" data-id="${i.id}">✕</button>`:''}</td>` : ''}</tr>`).join('')
           || `<tr><td colspan="8" class="muted">No KPIs in this section yet.</td></tr>`}
       </table></div></div>`; }).join('')}`;
@@ -1394,8 +1441,9 @@ function kpiForm(sid, id){
     onSubmit: v => { if ('weight' in v) v.weight = num(v.weight);
       return save(id ? `Updated KPI (FY${KY()}): ${i.kpi} → ${v.status}` : `Added KPI (FY${KY()}): ${v.kpi}`, D => {
         const ds = KS(D).find(y => y.id === sid); if (!ds) return false;
-        if (id) { const x = ds.items.find(y => y.id === id); if (!x) return false; Object.assign(x, v); }
-        else ds.items.push({id:uid(), ...v});
+        const stamp = {updatedAt:new Date().toISOString(), updatedBy:ME.name};
+        if (id) { const x = ds.items.find(y => y.id === id); if (!x) return false; Object.assign(x, v, stamp); }
+        else ds.items.push({id:uid(), ...v, ...stamp});
       }); }});
 }
 function newKpiYear(){
@@ -1474,6 +1522,17 @@ PAGES.reports = function(){
         ${can('manage') ? `<button class="btn-outline" style="color:var(--red);" data-act="del-item" data-id="${it.id}" data-name="${esc(it.name)}" data-path="${esc(base)}" data-folder="1" title="Delete">✕</button>` : ''}
       </div></div>
       ${open ? `<div class="report-files">${folderView(path, {filesOnly:true})}</div>` : ''}</div>`; }).join('') || '<div class="empty-state">No reports yet.</div>';
+  let remind = '';
+  if (st.items && !st.error) {
+    const now = new Date(), ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`, today = now.toISOString().slice(0,10);
+    const has = kind === 'monthly' ? periods.some(p => p.name.startsWith(ym))
+      : periods.some(p => { const m = p.name.match(/^(\d{4}-\d{2}-\d{2}) to (\d{4}-\d{2}-\d{2})/); return m && m[1] <= today && today <= m[2]; });
+    if (!has) {
+      const label = kind === 'monthly' ? now.toLocaleDateString('en-MY',{month:'long',year:'numeric'}) : 'the current two weeks';
+      remind = `<div class="warn-box remind"><span>There is no ${kind === 'monthly' ? 'Monthly Report Card' : 'Pre-Development Report'} folder for <b>${esc(label)}</b> yet.</span>
+        ${can('upload') ? (kind === 'monthly' ? `<button class="btn-sm green" data-act="quick-month">Create ${esc(label)}</button>` : '<button class="btn-sm green" data-act="add-period">Add period</button>') : ''}</div>`;
+    }
+  }
   $('#page-reports').innerHTML = `
     <h1>Project Reports</h1>
     <div class="page-desc">Monthly Report Card (sorted by month) &amp; Pre-Development Report (bi-weekly) · stored in OneDrive › ${esc(relPath(base))}</div>
@@ -1484,7 +1543,7 @@ PAGES.reports = function(){
     <div class="page-header-row" style="margin-bottom:16px;">
       <div class="page-desc" style="margin:0;">Sorted newest first · upload PDF/PPTX per ${kind==='monthly'?'month':'period'}</div>
       ${can('upload') ? `<button class="btn-green" data-act="add-period">+ Add ${kind==='monthly'?'Month':'Period'}</button>` : ''}
-    </div>${list}`;
+    </div>${remind}${list}`;
 };
 function addPeriod(){
   if (!guard('upload')) return;
@@ -1539,7 +1598,7 @@ PAGES.folders = function(){
             + (loose.length ? `<div class="doc-wrap"><div class="cat-files" style="padding-top:6px">${folderView(path, {filesOnly:true})}</div></div>` : '');
         }
       }
-      if (open && tab === 'ipc') body = ['Contractor','Consultant'].map(party => {
+      if (open && tab === 'ipc') body = `<div class="btn-row" style="justify-content:flex-end;margin-bottom:10px">${ipcs.length ? `<button class="btn-sm" data-act="export-ipc" data-id="${p.id}">Export IPC to Excel</button>` : ''}</div>` + ['Contractor','Consultant'].map(party => {
         const rows = ipcs.filter(i => i.party === party).sort((a,b) => (a.date||'').localeCompare(b.date||''));
         const tc = rows.reduce((a,i) => a + num(i.claimed), 0), tce = rows.reduce((a,i) => a + num(i.certified), 0);
         return `<div class="ipc-block"><div class="ipc-head"><b>${party} IPC</b>
@@ -1552,7 +1611,7 @@ PAGES.folders = function(){
           </table></div></div>`; }).join('');
       return `<div class="folder-card">
         <div class="folder-head" data-act="toggle" data-key="proj:${p.id}"><div class="left"><span class="ico teal">${ICO.layers}</span><div><h4>${esc(p.name)}</h4>
-          <div class="sub">${esc(p.type)} · GDV: ${esc(p.gdv||'TBA')} · ${ipcs.length} IPC entries</div></div></div><div>${open?'▴':'▾'}</div></div>
+          <div class="sub">${p.type ? esc(p.type) + ' · ' : ''}GDV: ${esc(p.gdv||'TBA')} · ${ipcs.length} IPC entr${ipcs.length === 1 ? 'y' : 'ies'}${ipcs.length ? ` · certified to date ${fmtRM(ipcs.reduce((a,i) => a + num(i.certified), 0))}` : ''}</div></div></div><div>${open?'▴':'▾'}</div></div>
         ${open ? `<div class="folder-body"><div class="folder-tabs">
           <div class="folder-tab ${tab==='docs'?'active':''}" data-act="folder-tab" data-id="${p.id}" data-tab="docs">Documents</div>
           <div class="folder-tab ${tab==='ipc'?'active':''}" data-act="folder-tab" data-id="${p.id}" data-tab="ipc">IPC Tracking</div></div>${body}</div>` : ''}
@@ -1644,6 +1703,14 @@ const ACT = {
   'del-item': d => deleteItem(d),
   'toggle': d => { UI.open[d.key] = !UI.open[d.key]; render(); },
   'kpi-alert': kpiAlert,
+  'kpi-filter': d => { UI.kpiFilter = UI.kpiFilter === d.f ? 'all' : d.f; render(); },
+  'export-kpi': exportKPI,
+  'export-ipc': d => exportIPC(d.id),
+  'quick-month': async () => { if (!guard('upload')) return;
+      const now = new Date(), ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+      const name = `${ym} (${now.toLocaleDateString('en-MY',{month:'long',year:'numeric'})})`, base = F.reports('monthly');
+      await ensureFolder(base + '/' + name); invalidate(base); UI.open[base + '/' + name] = true; render();
+      save(`Added report period: ${name}`); toast(`Folder for ${name} created.`, 'ok'); },
   'kpi-year': d => { UI.kpiYear = d.y; render(); },
   'kpi-new-year': newKpiYear,
   'kpi-make-current': async d => { if (!guard('admin')) return; const y = KY();
