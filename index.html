@@ -239,6 +239,36 @@
   .crumbs a:hover{text-decoration:underline;}
   .crumbs span.sep{color:var(--text-dim);}
   .back-btn{padding:6px 12px;margin-right:8px;font-size:13.5px;}
+  .stat-4{grid-template-columns:repeat(4,1fr);}
+  .stat-btn{text-align:left;font:inherit;color:inherit;cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s;}
+  .stat-btn:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(22,48,74,.10);}
+  .stat-btn.sel{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal);}
+  .progress-card{font:inherit;color:inherit;cursor:pointer;transition:transform .12s,box-shadow .12s;}
+  .progress-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(22,48,74,.10);}
+  .filter-tag{background:var(--teal);color:#fff;border-radius:20px;padding:2px 4px 2px 10px;letter-spacing:.04em;}
+  .filter-tag button{background:none;border:none;color:#fff;cursor:pointer;font-size:12px;}
+  .attn{border-left:4px solid var(--amber);}
+  .due{display:inline-block;font-size:12px;font-weight:600;border-radius:20px;padding:2px 10px;background:#EDF0F2;color:#4F5E6B;margin:2px 4px 2px 0;text-transform:none;letter-spacing:0;white-space:nowrap;}
+  .due.soon{background:#FBEFD7;color:#8A5A00;}
+  .due.overdue{background:#FDE7E4;color:#B42318;}
+  .tb-row{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .tdate{color:var(--text-dim);font-weight:500;}
+  .bar{height:8px;border-radius:6px;background:#E7ECE4;overflow:hidden;margin-top:4px;}
+  .bar i{display:block;height:100%;border-radius:6px;}
+  .bar-label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--text-dim);margin:5px 0 12px;}
+  .bar-label b{color:var(--navy-2);}
+  .proj-card.st-amber{border-top-color:var(--amber);} .proj-card.st-green{border-top-color:var(--green-600);} .proj-card.st-grey{border-top-color:#9AA5AE;}
+  .upd{font-size:12.5px;color:var(--text-dim);margin-bottom:12px;}
+  .upd.stale{color:#8A5A00;}
+  .flash .proj-card{animation:flash 1.6s ease;}
+  @keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--lime)}100%{box-shadow:var(--shadow)}}
+  @media (max-width:980px){ .stat-4{grid-template-columns:repeat(2,1fr);} }
+  @media print{
+    .sidebar,.btn-row,.btn-green,.btn-outline,.link-btn,.toast,#modal{display:none !important;}
+    .main{margin:0 !important;padding:0 !important;max-width:none;}
+    body{background:#fff;} .page{display:none !important;} .page.active{display:block !important;animation:none;}
+    .proj-card,.progress-card,.stat-card,.kpi-section{box-shadow:none !important;break-inside:avoid;}
+  }
   .search-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
   .search-box{flex:1;max-width:640px;min-width:260px;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line-2);border-radius:10px;padding:0 12px;transition:border-color .15s,box-shadow .15s;}
   .search-box:focus-within{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,130,122,.15);}
@@ -952,18 +982,57 @@ document.addEventListener('drop', e => {
 const stat = (l,v,c) => `<div class="stat-card"><div class="label">${l}</div><div class="value ${c}">${v}</div></div>`;
 
 /* ---------- DASHBOARD ---------- */
+/* ---------- project helpers: target date, last update ---------- */
+const STALE_DAYS = 14;
+const dayDiff = iso => Math.round((new Date(iso + 'T00:00:00') - new Date(new Date().toDateString())) / 86400000);
+function lastUpdate(p){
+  const n = (p.notes || []).map(x => x.at), all = [p.updatedAt, ...n].filter(Boolean).sort();
+  return all.length ? all[all.length - 1] : null;
+}
+function dueBadge(p){
+  if (!p.targetDate || p.status === 'Completed') return '';
+  const d = dayDiff(p.targetDate);
+  if (d < 0)   return `<span class="due overdue">Overdue by ${-d} day${d === -1 ? '' : 's'}</span>`;
+  if (d === 0) return `<span class="due soon">Due today</span>`;
+  if (d <= 30) return `<span class="due soon">Due in ${d} day${d === 1 ? '' : 's'}</span>`;
+  return `<span class="due">Due ${fmtDate(p.targetDate)}</span>`;
+}
+function staleInfo(p){
+  if (p.status === 'Completed') return null;
+  const u = lastUpdate(p); if (!u) return {never:true};
+  const days = Math.floor((Date.now() - new Date(u)) / 86400000);
+  return days >= STALE_DAYS ? {days} : null;
+}
+const STATUS_ORDER = {'At Risk':0,'On Hold':1,'In Progress':2,'Not Started':3,'Completed':4};
+
 PAGES.dashboard = function(){
-  const P = S.projects, c = s => P.filter(p => p.status === s).length;
-  const kpis = S.kpiSections.flatMap(s => s.items);
+  const all = S.projects, c = s => all.filter(p => p.status === s).length;
+  const f = UI.dashFilter || 'all';
+  const P = all.filter(p => f === 'all' || p.status === f)
+    .slice().sort((a,b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9) || a.name.localeCompare(b.name));
+  const statBtn = (label, val, cls, key) => `<button class="stat-card stat-btn ${f === key ? 'sel' : ''}" data-act="dash-filter" data-f="${key}" title="${key === 'all' ? 'Show all projects' : 'Show only ' + label + ' projects'}">
+      <div class="label">${label}</div><div class="value ${cls}">${val}</div></button>`;
+  // attention list: overdue / due within 30 days / not updated recently
+  const attention = all.filter(p => p.status !== 'Completed').map(p => {
+    const d = p.targetDate ? dayDiff(p.targetDate) : null, st = staleInfo(p), why = [];
+    if (d !== null && d < 0) why.push(`<span class="due overdue">Target overdue by ${-d} day${d === -1 ? '' : 's'}</span>`);
+    else if (d !== null && d <= 30) why.push(`<span class="due soon">Target ${d === 0 ? 'today' : 'in ' + d + ' day' + (d === 1 ? '' : 's')}</span>`);
+    if (p.status === 'At Risk') why.push('<span class="due overdue">At risk</span>');
+    if (st) why.push(`<span class="due">${st.never ? 'No update yet' : 'No update for ' + st.days + ' days'}</span>`);
+    return {p, why, rank: (d !== null && d < 0 ? 0 : p.status === 'At Risk' ? 1 : d !== null && d <= 30 ? 2 : 3)};
+  }).filter(x => x.why.length).sort((a,b) => a.rank - b.rank);
   const card = p => {
-    const cls = statusCls(p.status), notes = (p.notes||[]).slice(-2).reverse();
-    return `<div class="proj-card">
+    const cls = statusCls(p.status), notes = (p.notes||[]).slice(-2).reverse(), u = lastUpdate(p), st = staleInfo(p);
+    return `<div class="proj-card st-${cls}">
       <div class="proj-head"><div><h4>${esc(p.name)}</h4><div class="type">${esc(p.type)}</div></div><span class="badge ${cls}">${esc(p.status)}</span></div>
-      <div class="proj-gdv">GDV: <b>${esc(p.gdv||'TBA')}</b> · Progress: <b>${+p.progress||0}%</b></div>
+      <div class="proj-gdv">GDV: <b>${esc(p.gdv||'TBA')}</b></div>
+      <div class="bar" title="Progress ${+p.progress||0}%"><i style="width:${clampPct(p.progress)}%;background:${COLORS[cls]}"></i></div>
+      <div class="bar-label"><span>Progress</span><b>${+p.progress||0}%</b></div>
       <div class="proj-note">${esc(p.note)}</div>
-      <div class="target-box">Target<b>${esc(p.target||'—')}</b></div>
+      <div class="target-box"><div class="tb-row"><span>Target</span>${dueBadge(p)}</div><b>${esc(p.target||'—')}${p.targetDate ? ` <span class="tdate">· ${fmtDate(p.targetDate)}</span>` : ''}</b></div>
       ${notes.length ? `<div class="notes"><div class="section-label" style="margin-bottom:6px">Latest team notes</div>${notes.map(n =>
         `<div class="note"><div class="muted small">${esc(n.by)} · ${fmtDT(n.at)}</div>${esc(n.text)}</div>`).join('')}</div>` : ''}
+      <div class="upd ${st ? 'stale' : ''}">${u ? `Last updated ${fmtDT(u)}` : 'No updates yet'}${st && !st.never ? ` · <b>${st.days} days ago</b>` : ''}</div>
       <div class="btn-row">
         ${can('edit') ? `<button class="link-btn" data-act="add-note" data-id="${p.id}">Add Team Note / Status</button><button class="link-btn" data-act="edit-project" data-id="${p.id}">Edit</button>`
                       : (p.notes||[]).length ? `<button class="link-btn" data-act="add-note" data-id="${p.id}">View Notes</button>` : ''}
@@ -971,21 +1040,43 @@ PAGES.dashboard = function(){
         ${can('manage') ? `<button class="link-btn red" data-act="del-project" data-id="${p.id}" title="Remove project">✕</button>` : ''}
       </div></div>`;
   };
+  const fLabel = {all:'All projects','In Progress':'In Progress','At Risk':'At Risk','Completed':'Completed'}[f] || f;
   $('#page-dashboard').innerHTML = `
     <div class="page-header-row"><div><h1>Dashboard</h1><div class="page-desc">FY${esc(S.settings.fy)} — Property Development Department Overview</div></div>
-      ${can('manage') ? '<button class="btn-green" data-act="add-project">+ Add Project</button>' : ''}</div>
-    <div class="stat-grid">${stat('Total Projects',P.length,'')}${stat('In Progress',c('In Progress'),'blue')}${stat('At Risk',c('At Risk'),'amber')}${stat('Completed',c('Completed'),'green')}${stat('KPIs Completed',`${kpis.filter(k=>k.status==='Completed').length}/${kpis.length}`,'')}</div>
-    <div class="section-label">Project Progress Overview</div>
-    <div class="progress-grid">${P.map(p => `<div class="progress-card"><h3>${esc(p.name)}</h3>
+      <div class="btn-row"><button class="btn-outline" data-act="export-projects" title="Download a project summary for Excel">Export to Excel</button>
+      <button class="btn-outline" data-act="print" title="Print or save as PDF">Print</button>
+      ${can('manage') ? '<button class="btn-green" data-act="add-project">+ Add Project</button>' : ''}</div></div>
+    <div class="stat-grid stat-4">${statBtn('Total Projects',all.length,'','all')}${statBtn('In Progress',c('In Progress'),'blue','In Progress')}${statBtn('At Risk',c('At Risk'),'amber','At Risk')}${statBtn('Completed',c('Completed'),'green','Completed')}</div>
+    ${attention.length ? `<div class="section-label">Needs attention</div>
+    <div class="kpi-section attn"><div class="table-wrap"><table>
+      ${attention.map(x => `<tr><td style="width:34%"><a class="file-link" data-act="goto-project" data-id="${x.p.id}">${esc(x.p.name)}</a><div class="muted small">${esc(x.p.target || '')}</div></td>
+        <td>${x.why.join(' ')}</td>
+        <td style="text-align:right;white-space:nowrap">${can('edit') ? `<button class="btn-sm" data-act="add-note" data-id="${x.p.id}">Add update</button>` : ''}</td></tr>`).join('')}
+    </table></div></div>` : ''}
+    <div class="section-label">Project Progress Overview${f !== 'all' ? ` · <span class="filter-tag">${esc(fLabel)} <button data-act="dash-filter" data-f="all" title="Show all">✕</button></span>` : ''}</div>
+    <div class="progress-grid">${P.map(p => `<button class="progress-card" data-act="goto-project" data-id="${p.id}" title="Go to project"><h3>${esc(p.name)}</h3>
       <div class="donut" style="--p:${clampPct(p.progress)};--c:${COLORS[statusCls(p.status)]}"><span class="${statusCls(p.status)}">${+p.progress||0}%</span></div>
-      <span class="badge ${statusCls(p.status)}">${esc(p.status)}</span></div>`).join('') || '<div class="muted">No projects yet.</div>'}</div>
-    <div class="proj-grid">${P.map(card).join('')}</div>
+      <span class="badge ${statusCls(p.status)}">${esc(p.status)}</span></button>`).join('') || `<div class="muted">${all.length ? 'No projects with this status.' : 'No projects yet.'}</div>`}</div>
+    <div class="proj-grid">${P.map(p => `<div id="proj-${p.id}">${card(p)}</div>`).join('')}</div>
     <div class="section-label" style="margin-top:34px">Recent activity</div>
     <div class="kpi-section"><div class="table-wrap"><table>
       ${S.log.slice(0,8).map(l => `<tr><td style="white-space:nowrap;width:190px" class="muted">${fmtDT(l.at)}</td><td style="width:200px"><b>${esc(l.by)}</b></td><td>${esc(l.action)}</td></tr>`).join('')
         || '<tr><td class="muted">No activity yet.</td></tr>'}
     </table></div></div>`;
 };
+function exportProjects(){
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const head = ['Project','Type','GDV','Status','Progress %','Current status','Next target','Target date','Days to target','Last updated','Latest note','Latest note by'];
+  const rows = S.projects.map(p => {
+    const n = (p.notes || []).slice(-1)[0] || {}, u = lastUpdate(p);
+    return [p.name, p.type, p.gdv, p.status, +p.progress || 0, p.note, p.target, p.targetDate || '', p.targetDate ? dayDiff(p.targetDate) : '',
+            u ? fmtDT(u) : '', n.text || '', n.by || ''];
+  });
+  const csv = '﻿' + [head, ...rows].map(r => r.map(q).join(',')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  const a = document.createElement('a'); a.href = url; a.download = `PDD Projects ${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
 function projectForm(id){
   if (!guard(id ? 'edit' : 'manage')) return;
   const p = id ? proj(id) : {name:'',type:'',gdv:'',status:'In Progress',progress:0,note:'',target:''};
@@ -997,10 +1088,11 @@ function projectForm(id){
       {key:'status',label:'Status',type:'select',options:PROJECT_STATUS,value:p.status},
       {key:'progress',label:'Progress (%)',type:'number',min:0,max:100,value:p.progress},
       {key:'note',label:'Current status summary',type:'textarea',value:p.note},
-      {key:'target',label:'Next target / milestone',value:p.target}
+      {key:'target',label:'Next target / milestone',value:p.target},
+      {key:'targetDate',label:'Target date (optional)',type:'date',value:p.targetDate||'',hint:'Used for “Due in … days” and overdue alerts on the Dashboard.'}
     ],
     onSubmit: async v => {
-      v.progress = clampPct(v.progress);
+      v.progress = clampPct(v.progress); v.updatedAt = new Date().toISOString();
       const folder = safeName(v.name);
       if (S.projects.some(x => x.id !== id && x.folder.toLowerCase() === folder.toLowerCase())) return formError('Another project already uses this name.');
       if (id) {
@@ -1034,7 +1126,7 @@ function addNote(id){
     onSubmit: v => save(`Added note to ${p.name}`, D => {
       const x = D.projects.find(y => y.id === id); if (!x) return false;
       (x.notes = x.notes || []).push({at:new Date().toISOString(), by:ME.name, text:v.text});
-      x.status = v.status; x.progress = clampPct(v.progress);
+      x.status = v.status; x.progress = clampPct(v.progress); x.updatedAt = new Date().toISOString();
     })});
 }
 async function deleteProject(id){
@@ -1480,6 +1572,12 @@ const ACT = {
   'add-note': d => addNote(d.id),
   'open-folder': d => { UI.open['proj:' + d.id] = true; UI.folderTab[d.id] = 'docs'; showPage('folders'); },
   'browse': d => { UI.browsePath = d.path; UI.searchQ = ''; UI.searchType = 'all'; if (UI.page !== 'documents') return showPage('documents'); pushLoc(); render(); },
+  'dash-filter': d => { UI.dashFilter = UI.dashFilter === d.f ? 'all' : d.f; render(); },
+  'goto-project': d => { if (UI.page !== 'dashboard') showPage('dashboard');
+      if (UI.dashFilter && UI.dashFilter !== 'all' && proj(d.id) && proj(d.id).status !== UI.dashFilter) { UI.dashFilter = 'all'; render(); }
+      const el = document.getElementById('proj-' + d.id); if (el) { el.scrollIntoView({behavior:'smooth', block:'center'}); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); } },
+  'export-projects': exportProjects,
+  'print': () => window.print(),
   'clear-search': () => { UI.searchQ = ''; UI.searchType = 'all'; render(); const i = $('#doc-search'); if (i) i.focus(); },
   'search-type': d => { const was = searching(); UI.searchType = UI.searchType === d.type && d.type !== 'all' ? 'all' : d.type; was !== searching() ? render() : refreshSearch(); },
   'refresh': d => { invalidate(d.path); render(); },
